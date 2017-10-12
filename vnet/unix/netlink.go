@@ -12,6 +12,7 @@ import (
 	"github.com/platinasystems/go/vnet/ethernet"
 	"github.com/platinasystems/go/vnet/gre"
 	"github.com/platinasystems/go/vnet/ip"
+	"github.com/platinasystems/go/vnet/ip/udp"
 	"github.com/platinasystems/go/vnet/ip4"
 	"github.com/platinasystems/go/vnet/ip6"
 
@@ -168,6 +169,9 @@ func (ns *net_namespace) route_msg_for_vnet_interface(v *netlink.RouteMessage) (
 			return
 		}
 		ok = ns.knownInterface(intf.ifindex)
+		if !ok {
+			ok = intf.is_tunnel
+		}
 		return
 	}
 	// Check that all multipath next hops are for known interfaces.
@@ -726,20 +730,38 @@ func (e *netlinkEvent) ip4RouteMsg(v *netlink.RouteMessage, isLastInEvent bool) 
 
 		// Otherwise its a normal next hop.
 		gw := nh.attrs[netlink.RTA_GATEWAY]
-		if gw != nil {
+		switch {
+		case gw != nil:
 			if err = m4.AddDelRouteNextHop(&p, &nh.NextHop, isDel); err != nil {
 				return
 			}
-		} else {
+		case intf.si == e.ns.vnet_tun_interface.si:
 			// Record interface routes.  For now, don't install in vnet FIB.
-			if intf.si == e.ns.vnet_tun_interface.si {
-				tt := e.ns.vnet_tun_interface
-				if isDel {
-					tt.interface_routes.Unset(&p)
-				} else {
-					tt.interface_routes.Set(&p, ip.AdjPunt)
-				}
+			tt := e.ns.vnet_tun_interface
+			if isDel {
+				tt.interface_routes.Unset(&p)
+			} else {
+				tt.interface_routes.Set(&p, ip.AdjPunt)
 			}
+		case intf.is_tunnel:
+			if intf.ip4h != nil {
+				var nbr ip4.Neighbor
+				nbr.Header = *intf.ip4h
+				switch {
+				case intf.greh != nil:
+					nbr.Payload = make([]byte, gre.SizeofHeader)
+					intf.greh.Write(nbr.Payload[:])
+				case intf.udph != nil:
+					nbr.Payload = make([]byte, udp.SizeofHeader)
+					intf.udph.Write(nbr.Payload[:])
+				}
+				nbr.FibIndex = e.ns.fibIndexForNamespace()
+				nbr.Weight = 1
+				nbr.LocalSi = vnet.SiNil
+				err = m4.AddDelRouteNeighbor(&p, &nbr, e.ns.fibIndexForNamespace(), isDel)
+			}
+		default:
+			return
 		}
 	}
 	return
