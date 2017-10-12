@@ -1627,6 +1627,18 @@ func (a Uint64Attr) WriteTo(w io.Writer) (int64, error) {
 	return acc.Tuple()
 }
 
+const (
+	TUNNEL_ENCAP_NONE = iota
+	TUNNEL_ENCAP_FOU
+	TUNNEL_ENCAP_GUE
+)
+
+const (
+	TUNNEL_ENCAP_FLAG_CSUM = 1 << iota
+	TUNNEL_ENCAP_FLAG_CSUM6
+	TUNNEL_ENCAP_FLAG_REMCSUM
+)
+
 type LwtunnelEncapType uint8
 
 const (
