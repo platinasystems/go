@@ -12,6 +12,11 @@ import (
 	"github.com/platinasystems/go/internal/netlink"
 	"github.com/platinasystems/go/vnet"
 	"github.com/platinasystems/go/vnet/ethernet"
+	"github.com/platinasystems/go/vnet/gre"
+	"github.com/platinasystems/go/vnet/ip"
+	"github.com/platinasystems/go/vnet/ip/udp"
+	"github.com/platinasystems/go/vnet/ip4"
+	"github.com/platinasystems/go/vnet/ip6"
 
 	"errors"
 	"fmt"
@@ -220,15 +225,15 @@ func (m *net_namespace_main) watch_for_new_net_namespaces() {
 }
 
 type net_namespace_interface struct {
-	name                 string
-	namespace            *net_namespace
-	ifindex              uint32
-	address              []byte
-	kind                 netlink.InterfaceKind
-	tunnel_metadata_mode bool
-	si                   vnet.Si
-	sup_interface        *net_namespace_interface
-	tuntap               *tuntap_interface
+	name          string
+	namespace     *net_namespace
+	ifindex       uint32
+	address       []byte
+	kind          netlink.InterfaceKind
+	si            vnet.Si
+	sup_interface *net_namespace_interface
+	tuntap        *tuntap_interface
+	tunnel_interface
 }
 
 func tuntap_address_key(name string, index uint) string {
@@ -546,17 +551,6 @@ func (ns *net_namespace) add_del_interface(m *Main, msg *netlink.IfInfoMessage) 
 			// fixme address change
 		}
 
-		// For tunnels record if in metadata mode.
-		if as := msg.GetLinkInfoData(); as != nil {
-			switch intf.kind {
-			case netlink.InterfaceKindIp4GRE, netlink.InterfaceKindIp4GRETap,
-				netlink.InterfaceKindIp6GRE, netlink.InterfaceKindIp6GRETap:
-				intf.tunnel_metadata_mode = as.X[netlink.IFLA_GRE_COLLECT_METADATA] != nil
-			case netlink.InterfaceKindIpip, netlink.InterfaceKindIp6Tunnel:
-				intf.tunnel_metadata_mode = as.X[netlink.IFLA_IPTUN_COLLECT_METADATA] != nil
-			}
-		}
-
 		intf.address = make([]byte, len(address))
 		copy(intf.address[:], address[:])
 		if name_changed {
@@ -602,8 +596,15 @@ func (ns *net_namespace) add_del_interface(m *Main, msg *netlink.IfInfoMessage) 
 			}
 		}
 
-		if !exists && intf.kind == netlink.InterfaceKindVlan {
-			err = m.add_del_vlan(intf, msg, is_del)
+		switch intf.kind {
+		case netlink.InterfaceKindIp4GRE, netlink.InterfaceKindIp4GRETap,
+			netlink.InterfaceKindIp6GRE, netlink.InterfaceKindIp6GRETap,
+			netlink.InterfaceKindIpip, netlink.InterfaceKindIp6Tunnel:
+			err = m.add_del_tunnel(intf, msg, is_del)
+		case netlink.InterfaceKindVlan:
+			if !exists {
+				err = m.add_del_vlan(intf, msg, is_del)
+			}
 		}
 	} else {
 		intf, ok := ns.interface_by_index[index]
@@ -615,6 +616,13 @@ func (ns *net_namespace) add_del_interface(m *Main, msg *netlink.IfInfoMessage) 
 			tif.add_del_namespace(m, ns, is_del)
 			tif.namespace = nil
 		}
+		switch intf.kind {
+		case netlink.InterfaceKindIp4GRE, netlink.InterfaceKindIp4GRETap,
+			netlink.InterfaceKindIp6GRE, netlink.InterfaceKindIp6GRETap,
+			netlink.InterfaceKindIpip, netlink.InterfaceKindIp6Tunnel:
+			err = m.add_del_tunnel(intf, msg, is_del)
+		}
+
 		if intf.si != vnet.SiNil {
 			if intf.kind == netlink.InterfaceKindVlan {
 				m.add_del_vlan(intf, msg, is_del)
@@ -684,6 +692,179 @@ func (m *net_namespace_main) add_del_vlan(intf *net_namespace_interface, msg *ne
 		m.set_si(intf, si)
 	}
 	return
+}
+
+type tunnel_interface struct {
+	is_tunnel            bool
+	tunnel_metadata_mode bool
+	ip4h                 *ip4.Header
+	ip6h                 *ip6.Header
+	udph                 *udp.Header
+	greh                 *gre.Header
+}
+
+func (m *net_namespace_main) add_del_tunnel(intf *net_namespace_interface, msg *netlink.IfInfoMessage, is_del bool) (err error) {
+	// Nothing (yet) to do for delete.
+	if is_del {
+		return
+	}
+
+	intf.is_tunnel = true
+	// Ip4/6 tunnels.
+	switch intf.kind {
+	case netlink.InterfaceKindIpip, netlink.InterfaceKindIp6Tunnel:
+		m.add_ip46_tunnel(intf, msg)
+	case netlink.InterfaceKindIp4GRE, netlink.InterfaceKindIp4GRETap,
+		netlink.InterfaceKindIp6GRE, netlink.InterfaceKindIp6GRETap:
+		m.add_gre_tunnel(intf, msg)
+	}
+	return
+}
+
+func (m *net_namespace_main) add_ip46_tunnel(intf *net_namespace_interface, msg *netlink.IfInfoMessage) {
+	as := msg.GetLinkInfoData()
+	if as == nil {
+		return
+	}
+	is6 := intf.kind != netlink.InterfaceKindIpip
+	h4 := &ip4.Header{
+		Ip_version_and_header_length: 0x45,
+	}
+	h6 := &ip6.Header{}
+	udph := &udp.Header{}
+	encap := struct {
+		kind  uint16
+		flags uint16
+	}{}
+	for k, a := range as.X {
+		if a == nil {
+			continue
+		}
+		kind := netlink.IfIptunLinkInfoDataAttrKind(k)
+		switch kind {
+		case netlink.IFLA_IPTUN_LOCAL:
+			if is6 {
+				copy(h6.Src[:], a.(*netlink.Ip6Address).Bytes())
+			} else {
+				copy(h4.Src[:], a.(*netlink.Ip4Address).Bytes())
+			}
+		case netlink.IFLA_IPTUN_REMOTE:
+			if is6 {
+				copy(h6.Dst[:], a.(*netlink.Ip6Address).Bytes())
+			} else {
+				copy(h4.Dst[:], a.(*netlink.Ip4Address).Bytes())
+			}
+		case netlink.IFLA_IPTUN_TTL:
+			h4.Ttl = a.(netlink.Uint8Attr).Uint()
+			h6.Ttl = h4.Ttl
+		case netlink.IFLA_IPTUN_TOS:
+			h4.Tos = a.(netlink.Uint8Attr).Uint()
+		case netlink.IFLA_IPTUN_PROTO:
+			h4.Protocol = ip.Protocol(a.(netlink.Uint8Attr).Uint())
+			h6.Protocol = h4.Protocol
+		case netlink.IFLA_IPTUN_ENCAP_TYPE:
+			encap.kind = a.(netlink.Uint16Attr).Uint()
+		case netlink.IFLA_IPTUN_ENCAP_FLAGS:
+			encap.flags = a.(netlink.Uint16Attr).Uint()
+		case netlink.IFLA_IPTUN_ENCAP_SPORT:
+			udph.SrcPort = vnet.Uint16(a.(netlink.Uint16Attr).Uint())
+		case netlink.IFLA_IPTUN_ENCAP_DPORT:
+			udph.DstPort = vnet.Uint16(a.(netlink.Uint16Attr).Uint())
+		case netlink.IFLA_IPTUN_COLLECT_METADATA:
+			intf.tunnel_metadata_mode = true
+		case netlink.IFLA_IPTUN_LINK, netlink.IFLA_IPTUN_PMTUDISC:
+		default:
+			panic(fmt.Errorf("unknown %v %v", kind, a))
+		}
+	}
+	if encap.kind == netlink.TUNNEL_ENCAP_FOU {
+		h4.Protocol = ip.UDP
+		h6.Protocol = ip.UDP
+		intf.udph = udph
+	}
+	if is6 {
+		intf.ip6h = h6
+	} else {
+		intf.ip4h = h4
+	}
+}
+
+func (m *net_namespace_main) add_gre_tunnel(intf *net_namespace_interface, msg *netlink.IfInfoMessage) {
+	as := msg.GetLinkInfoData()
+	if as == nil {
+		return
+	}
+	is6 := false
+	switch intf.kind {
+	case netlink.InterfaceKindIp6GRE, netlink.InterfaceKindIp6GRETap:
+		is6 = true
+	}
+	h4 := &ip4.Header{
+		Ip_version_and_header_length: 0x45,
+		Protocol:                     ip.GRE,
+	}
+	h6 := &ip6.Header{
+		Protocol: ip.GRE,
+	}
+	udph := &udp.Header{}
+	greh := &gre.Header{}
+	greh.Type = ethernet.TYPE_IP4.FromHost()
+	if is6 {
+		greh.Type = ethernet.TYPE_IP6.FromHost()
+	}
+	encap := struct {
+		kind  uint16
+		flags uint16
+	}{}
+	for k, a := range as.X {
+		if a == nil {
+			continue
+		}
+		kind := netlink.IfGRELinkInfoDataAttrKind(k)
+		switch kind {
+		case netlink.IFLA_GRE_LOCAL:
+			if is6 {
+				copy(h6.Src[:], a.(*netlink.Ip6Address).Bytes())
+			} else {
+				copy(h4.Src[:], a.(*netlink.Ip4Address).Bytes())
+			}
+		case netlink.IFLA_GRE_REMOTE:
+			if is6 {
+				copy(h6.Dst[:], a.(*netlink.Ip6Address).Bytes())
+			} else {
+				copy(h4.Dst[:], a.(*netlink.Ip4Address).Bytes())
+			}
+		case netlink.IFLA_GRE_TTL:
+			h4.Ttl = a.(netlink.Uint8Attr).Uint()
+			h6.Ttl = h4.Ttl
+		case netlink.IFLA_GRE_TOS:
+			h4.Tos = a.(netlink.Uint8Attr).Uint()
+		case netlink.IFLA_GRE_ENCAP_TYPE:
+			encap.kind = a.(netlink.Uint16Attr).Uint()
+		case netlink.IFLA_GRE_ENCAP_FLAGS:
+			encap.flags = a.(netlink.Uint16Attr).Uint()
+		case netlink.IFLA_GRE_ENCAP_SPORT:
+			udph.SrcPort = vnet.Uint16(a.(netlink.Uint16Attr).Uint())
+		case netlink.IFLA_GRE_ENCAP_DPORT:
+			udph.DstPort = vnet.Uint16(a.(netlink.Uint16Attr).Uint())
+		case netlink.IFLA_GRE_COLLECT_METADATA:
+			intf.tunnel_metadata_mode = true
+		case netlink.IFLA_GRE_LINK, netlink.IFLA_GRE_PMTUDISC:
+		default:
+			panic(fmt.Errorf("unknown %v %v", kind, a))
+		}
+	}
+	if encap.kind == netlink.TUNNEL_ENCAP_FOU {
+		h4.Protocol = ip.UDP
+		h6.Protocol = ip.UDP
+		intf.udph = udph
+	}
+	intf.greh = greh
+	if is6 {
+		intf.ip6h = h6
+	} else {
+		intf.ip4h = h4
+	}
 }
 
 func (m *net_namespace_main) interface_by_name(name string) (ns *net_namespace, intf *net_namespace_interface) {
