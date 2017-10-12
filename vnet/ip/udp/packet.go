@@ -5,6 +5,7 @@
 package udp
 
 import (
+	"github.com/platinasystems/go/elib/parse"
 	"github.com/platinasystems/go/vnet"
 
 	"fmt"
@@ -24,6 +25,15 @@ type Header struct {
 func (h *Header) String() (s string) {
 	s = fmt.Sprintf("0x%x -> 0x%x", h.SrcPort.ToHost(), h.DstPort.ToHost())
 	return
+}
+
+func (h *Header) Parse(in *parse.Input) {
+	var ports [2]vnet.Uint16
+	if !in.Parse("%v -> %v", &ports[0], &ports[1]) {
+		in.ParseError()
+	}
+	h.SrcPort = ports[0].FromHost()
+	h.DstPort = ports[1].FromHost()
 }
 
 const SizeofHeader = 8

@@ -13,6 +13,7 @@ import (
 	"github.com/platinasystems/go/vnet/ethernet"
 	"github.com/platinasystems/go/vnet/gre"
 	ipcli "github.com/platinasystems/go/vnet/ip/cli"
+	"github.com/platinasystems/go/vnet/ip/udp"
 	"github.com/platinasystems/go/vnet/ip4"
 	"github.com/platinasystems/go/vnet/ip6"
 	"github.com/platinasystems/go/vnet/pg"
@@ -214,6 +215,7 @@ func main() {
 	m6 := ip6.Init(v)
 	ethernet.Init(v, m4, m6)
 	gre.Init(v)
+	udp.Init(v)
 	ixge.Init(v)
 	pg.Init(v)
 	ipcli.Init(v)

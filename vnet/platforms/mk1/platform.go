@@ -15,6 +15,7 @@ import (
 	"github.com/platinasystems/go/vnet/ethernet"
 	"github.com/platinasystems/go/vnet/gre"
 	ipcli "github.com/platinasystems/go/vnet/ip/cli"
+	"github.com/platinasystems/go/vnet/ip/udp"
 	"github.com/platinasystems/go/vnet/ip4"
 	"github.com/platinasystems/go/vnet/ip6"
 	"github.com/platinasystems/go/vnet/pg"
@@ -95,6 +96,7 @@ func PlatformInit(v *vnet.Vnet, p *fe1_platform.Platform) (err error) {
 	m4 := ip4.Init(v)
 	m6 := ip6.Init(v)
 	gre.Init(v)
+	udp.Init(v)
 	ethernet.Init(v, m4, m6)
 	if !p.SriovMode {
 		ixge.Init(v, ixge.Config{DisableUnix: true, PuntNode: "fe1-single-tagged-punt"})
