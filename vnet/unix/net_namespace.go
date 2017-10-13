@@ -729,8 +729,11 @@ func (m *net_namespace_main) add_ip46_tunnel(intf *net_namespace_interface, msg 
 	is6 := intf.kind != netlink.InterfaceKindIpip
 	h4 := &ip4.Header{
 		Ip_version_and_header_length: 0x45,
+		Protocol:                     ip.IP_IN_IP,
 	}
-	h6 := &ip6.Header{}
+	h6 := &ip6.Header{
+		Protocol: ip.IP6_IN_IP,
+	}
 	udph := &udp.Header{}
 	encap := struct {
 		kind  uint16
@@ -760,8 +763,11 @@ func (m *net_namespace_main) add_ip46_tunnel(intf *net_namespace_interface, msg 
 		case netlink.IFLA_IPTUN_TOS:
 			h4.Tos = a.(netlink.Uint8Attr).Uint()
 		case netlink.IFLA_IPTUN_PROTO:
-			h4.Protocol = ip.Protocol(a.(netlink.Uint8Attr).Uint())
-			h6.Protocol = h4.Protocol
+			proto := ip.Protocol(a.(netlink.Uint8Attr).Uint())
+			if proto != 0 {
+				h4.Protocol = proto
+				h6.Protocol = h4.Protocol
+			}
 		case netlink.IFLA_IPTUN_ENCAP_TYPE:
 			encap.kind = a.(netlink.Uint16Attr).Uint()
 		case netlink.IFLA_IPTUN_ENCAP_FLAGS:
@@ -772,7 +778,10 @@ func (m *net_namespace_main) add_ip46_tunnel(intf *net_namespace_interface, msg 
 			udph.DstPort = vnet.Uint16(a.(netlink.Uint16Attr).Uint())
 		case netlink.IFLA_IPTUN_COLLECT_METADATA:
 			intf.tunnel_metadata_mode = true
-		case netlink.IFLA_IPTUN_LINK, netlink.IFLA_IPTUN_PMTUDISC:
+		case netlink.IFLA_IPTUN_LINK, netlink.IFLA_IPTUN_PMTUDISC,
+			netlink.IFLA_IPTUN_ENCAP_LIMIT,
+			netlink.IFLA_IPTUN_FLAGS,
+			netlink.IFLA_IPTUN_FLOWINFO:
 		default:
 			panic(fmt.Errorf("unknown %v %v", kind, a))
 		}
@@ -849,7 +858,13 @@ func (m *net_namespace_main) add_gre_tunnel(intf *net_namespace_interface, msg *
 			udph.DstPort = vnet.Uint16(a.(netlink.Uint16Attr).Uint())
 		case netlink.IFLA_GRE_COLLECT_METADATA:
 			intf.tunnel_metadata_mode = true
-		case netlink.IFLA_GRE_LINK, netlink.IFLA_GRE_PMTUDISC:
+		case netlink.IFLA_GRE_LINK, netlink.IFLA_GRE_PMTUDISC,
+			netlink.IFLA_GRE_IFLAGS, netlink.IFLA_GRE_OFLAGS,
+			netlink.IFLA_GRE_IKEY, netlink.IFLA_GRE_OKEY,
+			netlink.IFLA_GRE_IGNORE_DF,
+			netlink.IFLA_GRE_ENCAP_LIMIT,
+			netlink.IFLA_GRE_FLOWINFO,
+			netlink.IFLA_GRE_FLAGS:
 		default:
 			panic(fmt.Errorf("unknown %v %v", kind, a))
 		}
