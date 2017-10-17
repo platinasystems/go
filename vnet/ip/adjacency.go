@@ -85,6 +85,8 @@ type Adjacency struct {
 	// Destination index for rewrite.
 	Index uint32
 
+	LocalSi vnet.Si
+
 	vnet.Rewrite
 }
 

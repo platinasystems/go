@@ -728,15 +728,15 @@ func (e *netlinkEvent) ip4RouteMsg(v *netlink.RouteMessage, isLastInEvent bool) 
 			continue
 		}
 
-		// Otherwise its a normal next hop.
 		gw := nh.attrs[netlink.RTA_GATEWAY]
 		switch {
 		case gw != nil:
+			// Check for route via gateway.
 			if err = m4.AddDelRouteNextHop(&p, &nh.NextHop, isDel); err != nil {
 				return
 			}
 		case intf.si == e.ns.vnet_tun_interface.si:
-			// Record interface routes.  For now, don't install in vnet FIB.
+			// Check for interface route via vnet interface.  For now, don't install in vnet FIB.
 			tt := e.ns.vnet_tun_interface
 			if isDel {
 				tt.interface_routes.Unset(&p)
@@ -744,6 +744,7 @@ func (e *netlinkEvent) ip4RouteMsg(v *netlink.RouteMessage, isLastInEvent bool) 
 				tt.interface_routes.Set(&p, ip.AdjPunt)
 			}
 		case intf.is_tunnel:
+			// Check for ip4 tunnel.
 			if intf.ip4h != nil {
 				var nbr ip4.Neighbor
 				nbr.Header = *intf.ip4h
@@ -755,15 +756,25 @@ func (e *netlinkEvent) ip4RouteMsg(v *netlink.RouteMessage, isLastInEvent bool) 
 					nbr.Payload = make([]byte, udp.SizeofHeader)
 					intf.udph.Write(nbr.Payload[:])
 				}
-				nbr.FibIndex = e.ns.fibIndexForNamespace()
-				nbr.Weight = 1
-				nbr.LocalSi = vnet.SiNil
-				err = m4.AddDelRouteNeighbor(&p, &nbr, e.ns.fibIndexForNamespace(), isDel)
+				err = e.ns.add_del_ip4_tunnel_route(&p, &nbr, isDel)
 			}
 		default:
 			return
 		}
 	}
+	return
+}
+
+func (ns *net_namespace) add_del_ip4_tunnel_route(p *ip4.Prefix, nbr *ip4.Neighbor, isDel bool) (err error) {
+	nbr.FibIndex = ns.fibIndexForNamespace()
+	// If destination matches interface route for vnet tun interface, then use default namespace for next hop lookup.
+	if _, _, ok := ns.vnet_tun_interface.interface_routes.Lookup(nbr.Header.Dst); ok {
+		nbr.FibIndex = ns.m.default_namespace.fibIndexForNamespace()
+	}
+	nbr.Weight = 1
+	nbr.LocalSi = ns.vnet_tun_interface.si
+	m4 := ip4.GetMain(ns.m.m.v)
+	err = m4.AddDelRouteNeighbor(p, nbr, ns.fibIndexForNamespace(), isDel)
 	return
 }
 
@@ -817,18 +828,7 @@ func (e *netlinkEvent) ip4_in_ip4_route(p *ip4.Prefix, as *netlink.AttrArray, in
 	// not yet used
 	_ = flags
 
-	m4 := ip4.GetMain(e.m.v)
-
-	// By default lookup neighbor in FIB for namespace.
-	nbr.FibIndex = e.ns.fibIndexForNamespace()
-	// If destination matches interface route for vnet tun interface, then use default namespace for next hop lookup.
-	if _, _, ok := e.ns.vnet_tun_interface.interface_routes.Lookup(h.Dst); ok {
-		nbr.FibIndex = e.m.default_namespace.fibIndexForNamespace()
-	}
-
-	nbr.Weight = 1
-	nbr.LocalSi = e.ns.vnet_tun_interface.si
-	err = m4.AddDelRouteNeighbor(p, &nbr, e.ns.fibIndexForNamespace(), isDel)
+	e.ns.add_del_ip4_tunnel_route(p, &nbr, isDel)
 	return
 }
 

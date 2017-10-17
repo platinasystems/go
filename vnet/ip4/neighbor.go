@@ -26,6 +26,7 @@ type Neighbor struct {
 
 func (n *Neighbor) NextHopWeight() ip.NextHopWeight     { return n.Weight }
 func (n *Neighbor) NextHopFibIndex(m *Main) ip.FibIndex { return n.FibIndex }
+func (n *Neighbor) NextHopLocalSi() vnet.Si             { return n.LocalSi }
 func (n *Neighbor) FinalizeAdjacency(a *ip.Adjacency) {
 	m := n.m
 	if a.IsLocal() {
@@ -40,6 +41,7 @@ func (n *Neighbor) FinalizeAdjacency(a *ip.Adjacency) {
 
 	r := &a.Rewrite
 
+	a.LocalSi = n.LocalSi
 	si := r.Si
 	h := &n.Header
 
