@@ -438,6 +438,16 @@ func (ns *net_namespace) validateFibIndexForSi(si vnet.Si, intf *tuntap_interfac
 	return
 }
 
+// For export.
+func FibIndexForSiNamespace(v *vnet.Vnet, si vnet.Si) (f ip.FibIndex) {
+	m := GetMain(v)
+	ns := &m.default_namespace
+	if intf, ok := m.vnet_tuntap_interface_by_si[si]; ok {
+		ns = intf.namespace
+	}
+	return ns.fibIndexForNamespace()
+}
+
 func (e *netlinkEvent) EventAction() {
 	var err error
 	m := e.m
