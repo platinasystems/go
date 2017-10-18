@@ -104,6 +104,10 @@ func (v *tx_packet_vector) add_packet(n *tx_node, r *vnet.Ref, intf *tuntap_inte
 	i := v.n_packets
 	v.n_packets++
 
+	if n.m.m.ConvertFouIpTunnelToAMT {
+		intf.namespace.convert_amt_to_fou(r)
+	}
+
 	// For tun interfaces strip ethernet header.
 	// First 4 bits of ip header will indicate ip4/ip6 packet type.
 	if intf.isTun {

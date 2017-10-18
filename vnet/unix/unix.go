@@ -76,7 +76,8 @@ type Main struct {
 func GetMain(v *vnet.Vnet) *Main { return v.GetPackage(packageIndex).(*Main) }
 
 type Config struct {
-	RxInjectNodeName string
+	RxInjectNodeName        string
+	ConvertFouIpTunnelToAMT bool
 }
 
 func Init(v *vnet.Vnet, cf Config) {

@@ -210,7 +210,10 @@ func main() {
 	v := &vnet.Vnet{}
 
 	// Select packages we want to run with.
-	unix.Init(v, unix.Config{RxInjectNodeName: "example-inject"})
+	unix.Init(v, unix.Config{
+		RxInjectNodeName:        "example-inject",
+		ConvertFouIpTunnelToAMT: true,
+	})
 	m4 := ip4.Init(v)
 	m6 := ip6.Init(v)
 	ethernet.Init(v, m4, m6)

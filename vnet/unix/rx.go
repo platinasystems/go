@@ -10,6 +10,9 @@ import (
 	"github.com/platinasystems/go/elib/iomux"
 	"github.com/platinasystems/go/vnet"
 	"github.com/platinasystems/go/vnet/ethernet"
+	"github.com/platinasystems/go/vnet/ip"
+	"github.com/platinasystems/go/vnet/ip/udp"
+	"github.com/platinasystems/go/vnet/ip4"
 
 	"fmt"
 	"syscall"
@@ -215,6 +218,9 @@ func (rv *rx_ref_vector) rx_packet(rx *rx_node, ns *net_namespace, pv *rx_packet
 				n = rx_node_next_error
 			}
 		}
+		if ns.m.m.ConvertFouIpTunnelToAMT {
+			ns.convert_fou_to_amt(&ref)
+		}
 		if n != rx_node_next_error && rx.next_for_inject != rx_node_next_error {
 			n = rx.next_for_inject
 		}
@@ -227,6 +233,85 @@ func (rv *rx_ref_vector) rx_packet(rx *rx_node, ns *net_namespace, pv *rx_packet
 	rv.nrefs[rvi] = uint32(n_refs)
 	rv.lens[rvi] = uint32(n_bytes_in_packet)
 	return
+}
+
+type iu struct {
+	i ip4.Header
+	u udp.Header
+}
+
+const (
+	sizeof_iu  = ip4.SizeofHeader + udp.SizeofHeader
+	sizeof_amt = 2
+	amt_data   = 0x600
+)
+
+func (h *iu) adjustLength(inc int16) {
+	h.i.Length = vnet.Uint16(int16(h.i.Length.ToHost()) + inc).FromHost()
+	h.i.Checksum = 0
+	h.i.Checksum = h.i.ComputeChecksum()
+	h.u.Length = vnet.Uint16(int16(h.u.Length.ToHost()) + inc).FromHost()
+	if h.u.Checksum != 0 {
+		panic("udp checksum not zero")
+	}
+}
+
+func (ns *net_namespace) convert_fou_to_amt(r *vnet.Ref) {
+	var (
+		vs  [2]*ethernet.VlanHeader
+		tmp [64]byte
+	)
+	b := r.DataSlice()
+	_, nVlan, et, payload := ethernet.ParseHeader(b, vs[:])
+	ethLen := ethernet.SizeofHeader + nVlan*ethernet.SizeofVlanHeader
+	if et != ethernet.TYPE_IP4 {
+		return
+	}
+	h := (*iu)(unsafe.Pointer(&payload[0]))
+	if h.i.Protocol != ip.UDP {
+		return
+	}
+	flow := h.i.GetFlow(payload[ip4.SizeofHeader:])
+	if _, ok := ns.ip4_tunnel_by_flow[flow]; !ok {
+		return
+	}
+	h.adjustLength(sizeof_amt)
+	header_len := ethLen + sizeof_iu
+	copy(tmp[:], b[:header_len])
+	*(*vnet.Uint16)(unsafe.Pointer(&b[header_len])) = vnet.Uint16(amt_data).FromHost()
+	r.Advance(-2)
+	c := r.DataSliceOffset(0)
+	copy(c[:], tmp[:header_len])
+}
+
+func (ns *net_namespace) convert_amt_to_fou(r *vnet.Ref) {
+	var (
+		vs  [2]*ethernet.VlanHeader
+		tmp [64]byte
+	)
+	b := r.DataSlice()
+	_, nVlan, et, payload := ethernet.ParseHeader(b, vs[:])
+	ethLen := ethernet.SizeofHeader + nVlan*ethernet.SizeofVlanHeader
+	if et != ethernet.TYPE_IP4 {
+		return
+	}
+	h := (*iu)(unsafe.Pointer(&payload[0]))
+	if h.i.Protocol != ip.UDP {
+		return
+	}
+	if (*(*vnet.Uint16)(unsafe.Pointer(&payload[sizeof_iu]))).FromHost() != amt_data {
+		return
+	}
+	flow := h.i.GetFlow(payload[ip4.SizeofHeader:])
+	if _, ok := ns.ip4_tunnel_by_flow[flow]; !ok {
+		return
+	}
+	r.Advance(sizeof_amt)
+	h.adjustLength(-sizeof_amt)
+	header_len := ethLen + sizeof_iu
+	copy(tmp[:], b[:header_len])
+	c := r.DataSliceOffset(0)
+	copy(c[:], tmp[:header_len])
 }
 
 // Add empty ethernet encapsulation for injection into switch.
