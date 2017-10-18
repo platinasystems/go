@@ -766,7 +766,7 @@ func (e *netlinkEvent) ip4RouteMsg(v *netlink.RouteMessage, isLastInEvent bool) 
 					nbr.Payload = make([]byte, udp.SizeofHeader)
 					intf.udph.Write(nbr.Payload[:])
 				}
-				err = e.ns.add_del_ip4_tunnel_route(&p, &nbr, isDel)
+				err = e.ns.add_del_ip4_tunnel_route(&p, &nbr, intf, isDel)
 			}
 		default:
 			return
@@ -775,7 +775,7 @@ func (e *netlinkEvent) ip4RouteMsg(v *netlink.RouteMessage, isLastInEvent bool) 
 	return
 }
 
-func (ns *net_namespace) add_del_ip4_tunnel_route(p *ip4.Prefix, nbr *ip4.Neighbor, isDel bool) (err error) {
+func (ns *net_namespace) add_del_ip4_tunnel_route(p *ip4.Prefix, nbr *ip4.Neighbor, intf *net_namespace_interface, isDel bool) (err error) {
 	nbr.FibIndex = ns.fibIndexForNamespace()
 	// If destination matches interface route for vnet tun interface, then use default namespace for next hop lookup.
 	if _, _, ok := ns.vnet_tun_interface.interface_routes.Lookup(nbr.Header.Dst); ok {
@@ -785,6 +785,15 @@ func (ns *net_namespace) add_del_ip4_tunnel_route(p *ip4.Prefix, nbr *ip4.Neighb
 	nbr.LocalSi = ns.vnet_tun_interface.si
 	m4 := ip4.GetMain(ns.m.m.v)
 	err = m4.AddDelRouteNeighbor(p, nbr, ns.fibIndexForNamespace(), isDel)
+	flow := intf.ip4h.GetFlow(nbr.Payload)
+	if !isDel {
+		if ns.ip4_tunnel_by_flow == nil {
+			ns.ip4_tunnel_by_flow = make(map[ip4.Flow]*net_namespace_interface)
+		}
+		ns.ip4_tunnel_by_flow[flow] = intf
+	} else {
+		delete(ns.ip4_tunnel_by_flow, flow)
+	}
 	return
 }
 
@@ -838,7 +847,7 @@ func (e *netlinkEvent) ip4_in_ip4_route(p *ip4.Prefix, as *netlink.AttrArray, in
 	// not yet used
 	_ = flags
 
-	e.ns.add_del_ip4_tunnel_route(p, &nbr, isDel)
+	e.ns.add_del_ip4_tunnel_route(p, &nbr, intf, isDel)
 	return
 }
 

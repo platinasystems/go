@@ -293,6 +293,8 @@ type net_namespace struct {
 
 	interface_by_index map[uint32]*net_namespace_interface
 	interface_by_name  map[string]*net_namespace_interface
+
+	tunnel_namespace
 }
 
 //go:generate gentemplate -d Package=unix -id net_namespace -d PoolType=net_namespace_pool -d Type=*net_namespace -d Data=entries github.com/platinasystems/go/elib/pool.tmpl
@@ -692,6 +694,10 @@ func (m *net_namespace_main) add_del_vlan(intf *net_namespace_interface, msg *ne
 		m.set_si(intf, si)
 	}
 	return
+}
+
+type tunnel_namespace struct {
+	ip4_tunnel_by_flow map[ip4.Flow]*net_namespace_interface
 }
 
 type tunnel_interface struct {
