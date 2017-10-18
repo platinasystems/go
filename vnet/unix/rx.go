@@ -278,10 +278,10 @@ func (ns *net_namespace) convert_fou_to_amt(r *vnet.Ref) {
 	h.adjustLength(sizeof_amt)
 	header_len := ethLen + sizeof_iu
 	copy(tmp[:], b[:header_len])
-	*(*vnet.Uint16)(unsafe.Pointer(&b[header_len])) = vnet.Uint16(amt_data).FromHost()
 	r.Advance(-2)
 	c := r.DataSliceOffset(0)
 	copy(c[:], tmp[:header_len])
+	*(*vnet.Uint16)(unsafe.Pointer(&c[header_len])) = vnet.Uint16(amt_data).FromHost()
 }
 
 func (ns *net_namespace) convert_amt_to_fou(r *vnet.Ref) {
@@ -302,7 +302,9 @@ func (ns *net_namespace) convert_amt_to_fou(r *vnet.Ref) {
 	if (*(*vnet.Uint16)(unsafe.Pointer(&payload[sizeof_iu]))).FromHost() != amt_data {
 		return
 	}
+	// Lookup reverse flow (with swapped dst, src).
 	flow := h.i.GetFlow(payload[ip4.SizeofHeader:])
+	flow = flow.Reverse()
 	if _, ok := ns.ip4_tunnel_by_flow[flow]; !ok {
 		return
 	}
