@@ -6,9 +6,47 @@ package ip4
 
 import (
 	"github.com/platinasystems/go/vnet"
+	"github.com/platinasystems/go/vnet/icmp4"
+	"github.com/platinasystems/go/vnet/ip"
+	"github.com/platinasystems/go/vnet/ip/udp"
+
+	"unsafe"
 )
 
 func GetHeader(r *vnet.Ref) *Header { return (*Header)(r.Data()) }
+func (h *Header) GetPayload() unsafe.Pointer {
+	return unsafe.Pointer(uintptr(unsafe.Pointer(h)) + uintptr(4*(0xf&h.Ip_version_and_header_length)))
+}
+
+type Flow struct {
+	Protocol ip.Protocol
+	// icmp type otherwise 0.
+	Extra uint8
+	// Src, Dst port for tcp/udp; otherwise 0.
+	SrcPort, DstPort vnet.Uint16
+	Src, Dst         Address
+}
+
+func GetFlow(r *vnet.Ref) Flow {
+	h := GetHeader(r)
+	p := h.GetPayload()
+	return h.getFlow(p)
+}
+func (h *Header) GetFlow(payload []byte) Flow { return h.getFlow(unsafe.Pointer(&payload[0])) }
+
+func (h *Header) getFlow(p unsafe.Pointer) (f Flow) {
+	f.Protocol = h.Protocol
+	f.Src, f.Dst = h.Src, h.Dst
+	switch f.Protocol {
+	case ip.ICMP:
+		h := (*icmp4.Header)(p)
+		f.Extra = uint8(h.Type)
+	case ip.TCP, ip.UDP:
+		h := (*udp.Header)(p)
+		f.SrcPort, f.DstPort = h.SrcPort, h.DstPort
+	}
+	return
+}
 
 type nodeMain struct {
 	inputNode              inputNode
