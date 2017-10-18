@@ -87,14 +87,15 @@ func (t Type) IsVLAN() (ok bool) {
 	return
 }
 
-func ParseHeader(b []byte) (h *Header, vs []*VlanHeader, payloadType Type, payload []byte) {
+func ParseHeader(b []byte, vs []*VlanHeader) (h *Header, nVlan uint, payloadType Type, payload []byte) {
 	i := 0
 	h = (*Header)(unsafe.Pointer(&b[i]))
 	i += SizeofHeader
 	payloadType = h.Type.FromHost()
-	for payloadType.IsVLAN() {
+	for payloadType.IsVLAN() && nVlan < uint(len(vs)) {
 		v := (*VlanHeader)(unsafe.Pointer(&b[i]))
-		vs = append(vs, v)
+		vs[nVlan] = v
+		nVlan++
 		i += SizeofVlanHeader
 		payloadType = v.Type.FromHost()
 	}
