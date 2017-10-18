@@ -9,6 +9,7 @@ import (
 	"github.com/platinasystems/go/vnet"
 	"github.com/platinasystems/go/vnet/ethernet"
 	"github.com/platinasystems/go/vnet/ip"
+	"github.com/platinasystems/go/vnet/ip/udp"
 
 	"fmt"
 )
@@ -93,6 +94,7 @@ func (m *Main) Init() (err error) {
 	m.pgInit(v)
 	m.cliInit(v)
 	RegisterLayer(v, ip.IP_IN_IP, m)
+	RegisterLayer(v, ip.UDP, udp.GetMain(v))
 	ethernet.RegisterLayer(v, ethernet.TYPE_IP4, m)
 	return
 }
