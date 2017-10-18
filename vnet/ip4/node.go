@@ -47,6 +47,12 @@ func (h *Header) getFlow(p unsafe.Pointer) (f Flow) {
 	}
 	return
 }
+func (f *Flow) Reverse() (r Flow) {
+	r = *f
+	r.Src, r.Dst = r.Dst, r.Src
+	r.SrcPort, r.DstPort = r.DstPort, r.SrcPort
+	return
+}
 
 type nodeMain struct {
 	inputNode              inputNode
