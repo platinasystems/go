@@ -7,8 +7,6 @@ package udp
 import (
 	"github.com/platinasystems/go/elib/parse"
 	"github.com/platinasystems/go/vnet"
-	"github.com/platinasystems/go/vnet/ip"
-	"github.com/platinasystems/go/vnet/ip4"
 )
 
 var packageIndex uint
@@ -34,10 +32,4 @@ func (m *Main) ParseLayer(b []byte, in *parse.Input) (n uint) {
 	h := (*Header)(vnet.Pointer(b))
 	h.Parse(in)
 	return SizeofHeader
-}
-
-func (m *Main) Init() (err error) {
-	v := m.Vnet
-	ip4.RegisterLayer(v, ip.UDP, m)
-	return
 }
