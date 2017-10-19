@@ -18,6 +18,7 @@ import (
 
 	"fmt"
 	"sync"
+	"syscall"
 )
 
 type msg_counts struct {
@@ -40,25 +41,34 @@ func (c *msg_counts) clear() {
 }
 
 type netlink_namespace struct {
-	netlink_socket_fds [2]int
-	netlink_socket_pair
+	socket_fds    [n_netlink_socket]int
+	sockets       netlink_sockets
 	ip4_next_hops []ip4_next_hop
 }
 
-type netlink_socket_pair struct {
-	broadcast_socket, unicast_socket *netlink.Socket
+const (
+	netlink_socket_broadcast = iota
+	netlink_socket_unicast
+	netlink_socket_generic
+	n_netlink_socket
+)
+
+type netlink_sockets [n_netlink_socket]*netlink.Socket
+
+func (p *netlink_sockets) close() {
+	for _, s := range p {
+		if s != nil {
+			s.Close()
+		}
+	}
 }
 
-func (p *netlink_socket_pair) close() {
-	if p.broadcast_socket != nil {
-		p.broadcast_socket.Close()
-	}
-	if p.unicast_socket != nil {
-		p.unicast_socket.Close()
-	}
-}
-
-func (p *netlink_socket_pair) configure(broadcast_fd, unicast_fd int) (err error) {
+func (p *netlink_sockets) configure(fds [n_netlink_socket]int) (err error) {
+	defer func() {
+		if err != nil {
+			p.close()
+		}
+	}()
 	cf := netlink.SocketConfig{
 		// Tested and needed to insert/delete 1e6 routes via "netlink route" cli.
 		RxBytes:           8 << 20,
@@ -75,21 +85,26 @@ func (p *netlink_socket_pair) configure(broadcast_fd, unicast_fd int) (err error
 		netlink.RTNLGRP_IPV6_MROUTE,
 		netlink.RTNLGRP_NSID,
 	}
-	if p.broadcast_socket, err = netlink.NewWithConfigAndFile(cf, broadcast_fd); err != nil {
+	if p[netlink_socket_broadcast], err = netlink.NewWithConfigAndFile(cf, fds[netlink_socket_broadcast]); err != nil {
 		return
 	}
 	cf.Groups = []netlink.MulticastGroup{netlink.NOOP_RTNLGRP}
-	if p.unicast_socket, err = netlink.NewWithConfigAndFile(cf, unicast_fd); err != nil {
-		p.broadcast_socket.Close()
+	if p[netlink_socket_unicast], err = netlink.NewWithConfigAndFile(cf, fds[netlink_socket_unicast]); err != nil {
+		return
+	}
+	cfg := cf
+	cfg.Protocol = syscall.NETLINK_GENERIC
+	if p[netlink_socket_generic], err = netlink.NewWithConfigAndFile(cfg, fds[netlink_socket_generic]); err != nil {
 		return
 	}
 	return
 }
 
-func (p *netlink_socket_pair) NetlinkTx(request netlink.Message, wait bool) (reply netlink.Message) {
-	p.unicast_socket.Tx <- request
+func (p *netlink_sockets) NetlinkTx(request netlink.Message, wait bool) (reply netlink.Message) {
+	s := p[netlink_socket_unicast]
+	s.Tx <- request
 	if wait {
-		reply = <-p.unicast_socket.Rx
+		reply = <-s.Rx
 	}
 	return
 }
@@ -218,7 +233,8 @@ func (ns *net_namespace) msg_for_vnet_interface(msg netlink.Message) (ok bool) {
 
 func (m *netlink_main) listener(ns *net_namespace) {
 	// Block until next message.
-	for msg := range ns.broadcast_socket.Rx {
+	s := ns.sockets[netlink_socket_broadcast]
+	for msg := range s.Rx {
 		e := ns.getEvent(m.m)
 		e.ns = ns
 		e.msgs = append(e.msgs, msg)
@@ -227,7 +243,7 @@ func (m *netlink_main) listener(ns *net_namespace) {
 	loop:
 		for {
 			select {
-			case msg := <-ns.broadcast_socket.Rx:
+			case msg := <-s.Rx:
 				if msg == nil { // channel close
 					break loop
 				}
@@ -257,7 +273,7 @@ func (ns *net_namespace) listen(nm *netlink_main) {
 	e := ns.getEvent(nm.m)
 	e.ns = ns
 
-	err := ns.broadcast_socket.Listen(func(msg netlink.Message) error {
+	err := ns.sockets[netlink_socket_broadcast].Listen(func(msg netlink.Message) error {
 		e.msgs = append(e.msgs, msg)
 		return nil
 	})

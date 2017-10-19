@@ -66,7 +66,7 @@ func (m *netlink_main) netlink_add_del_routes() {
 				msg.DstLen = uint8(p.Len)
 				msg.Attrs[netlink.RTA_GATEWAY] = &addrs[1]
 				msg.Attrs[netlink.RTA_OIF] = netlink.Int32Attr(intf.ifindex)
-				x.ns.NetlinkTx(msg, false)
+				x.ns.sockets.NetlinkTx(msg, false)
 			}
 		}
 		m.m.v.Logf("done %s\n", &x)

@@ -158,7 +158,10 @@ func (nm *net_namespace_main) init() (err error) {
 		nm.namespace_by_name = make(map[string]*net_namespace)
 		nm.namespace_by_name[ns.name] = ns
 
-		if err = ns.netlink_socket_pair.configure(-1, -1); err != nil {
+		for i := range ns.sockets {
+			ns.socket_fds[i] = -1
+		}
+		if err = ns.sockets.configure(ns.socket_fds); err != nil {
 			return
 		}
 
@@ -345,7 +348,7 @@ func (m *net_namespace_main) nsid_for_fd(fd int) (nsid int, inode uint64, err er
 	req.Flags = netlink.NLM_F_REQUEST
 	req.AddressFamily = netlink.AF_UNSPEC
 	req.Attrs[netlink.NETNSA_FD] = netlink.Uint32Attr(fd)
-	rep := m.default_namespace.NetlinkTx(req, true)
+	rep := m.default_namespace.sockets.NetlinkTx(req, true)
 	nsid = netlink.DefaultNsid
 	switch v := rep.(type) {
 	case *netlink.NetnsMessage:
@@ -1062,9 +1065,12 @@ func (m *netlink_main) show_net_namespaces(c cli.Commander, w cli.Writer, in *cl
 }
 
 func (ns *net_namespace) allocate_sockets() (err error) {
-	ns.netlink_socket_fds[0], err = syscall.Socket(syscall.AF_NETLINK, syscall.SOCK_RAW, syscall.NETLINK_ROUTE)
+	ns.socket_fds[netlink_socket_broadcast], err = syscall.Socket(syscall.AF_NETLINK, syscall.SOCK_RAW, syscall.NETLINK_ROUTE)
 	if err == nil {
-		ns.netlink_socket_fds[1], err = syscall.Socket(syscall.AF_NETLINK, syscall.SOCK_RAW, syscall.NETLINK_ROUTE)
+		ns.socket_fds[netlink_socket_unicast], err = syscall.Socket(syscall.AF_NETLINK, syscall.SOCK_RAW, syscall.NETLINK_ROUTE)
+	}
+	if err == nil {
+		ns.socket_fds[netlink_socket_generic], err = syscall.Socket(syscall.AF_NETLINK, syscall.SOCK_RAW, syscall.NETLINK_GENERIC)
 	}
 	return
 }
@@ -1139,7 +1145,7 @@ func (ns *net_namespace) add(m *net_namespace_main, e *add_del_namespace_event) 
 	}
 	m.namespace_by_inode[ns.inode] = ns
 
-	if err = ns.netlink_socket_pair.configure(ns.netlink_socket_fds[0], ns.netlink_socket_fds[1]); err != nil {
+	if err = ns.sockets.configure(ns.socket_fds); err != nil {
 		syscall.Close(ns.ns_fd)
 		ns.ns_fd = -1
 		return
@@ -1175,6 +1181,6 @@ func (ns *net_namespace) del(m *net_namespace_main) {
 		syscall.Close(ns.ns_fd)
 		ns.ns_fd = -1
 	}
-	ns.netlink_socket_pair.close()
+	ns.sockets.close()
 	ns.index = ^uint(0)
 }
