@@ -14,6 +14,7 @@ var pool = struct {
 	DoneMessage     sync.Pool
 	ErrorMessage    sync.Pool
 	GenMessage      sync.Pool
+	GenericMessage  sync.Pool
 	IfAddrMessage   sync.Pool
 	IfInfoMessage   sync.Pool
 	NeighborMessage sync.Pool
@@ -53,6 +54,11 @@ var pool = struct {
 	GenMessage: sync.Pool{
 		New: func() interface{} {
 			return new(GenMessage)
+		},
+	},
+	GenericMessage: sync.Pool{
+		New: func() interface{} {
+			return new(GenericMessage)
 		},
 	},
 	IfAddrMessage: sync.Pool{
@@ -176,6 +182,9 @@ func repool(v interface{}) {
 	case *GenMessage:
 		*t = GenMessage{}
 		pool.GenMessage.Put(t)
+	case *GenericMessage:
+		*t = GenericMessage{}
+		pool.GenericMessage.Put(t)
 	case *IfAddrMessage:
 		*t = IfAddrMessage{}
 		pool.IfAddrMessage.Put(t)

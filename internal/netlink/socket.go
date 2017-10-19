@@ -85,6 +85,7 @@ type SocketConfig struct {
 	RxMessages int
 	TxMessages int
 
+	Protocol          int
 	DontListenAllNsid bool
 
 	Groups []MulticastGroup
@@ -93,7 +94,7 @@ type SocketConfig struct {
 type Handler func(Message) error
 
 type ListenReq struct {
-	MsgType
+	MsgType uint16
 	AddressFamily
 }
 
@@ -109,6 +110,8 @@ type Socket struct {
 
 	// Pipe which exists just for gorx to have a file descriptor to detect socket close.
 	rx_close_kludge_pipe [2]int
+
+	genericSocket
 }
 
 func New(groups ...MulticastGroup) (*Socket, error) {
@@ -125,7 +128,7 @@ func NewWithConfig(cf SocketConfig) (s *Socket, err error) {
 
 func NewWithConfigAndFile(cf SocketConfig, fd int) (s *Socket, err error) {
 	if fd < 0 {
-		fd, err = syscall.Socket(syscall.AF_NETLINK, syscall.SOCK_RAW, syscall.NETLINK_ROUTE)
+		fd, err = syscall.Socket(syscall.AF_NETLINK, syscall.SOCK_RAW, cf.Protocol)
 		if err != nil {
 			err = os.NewSyscallError("socket", err)
 			return
@@ -423,25 +426,38 @@ func (s *Socket) gorx() {
 			h := (*Header)(unsafe.Pointer(&buf[i]))
 			l = h.MsgLen()
 			var msg Message
-			switch h.Type {
-			case NLMSG_NOOP:
-				msg = NewNoopMessage()
-			case NLMSG_ERROR:
-				msg = NewErrorMessage()
-			case NLMSG_DONE:
-				msg = NewDoneMessage()
-			case RTM_GETLINK:
-				msg = NewGenMessage()
-			case RTM_NEWLINK, RTM_DELLINK, RTM_SETLINK:
-				msg = NewIfInfoMessage()
-			case RTM_NEWADDR, RTM_DELADDR, RTM_GETADDR:
-				msg = NewIfAddrMessage()
-			case RTM_NEWROUTE, RTM_DELROUTE, RTM_GETROUTE:
-				msg = NewRouteMessage()
-			case RTM_NEWNEIGH, RTM_DELNEIGH, RTM_GETNEIGH:
-				msg = NewNeighborMessage()
-			case RTM_NEWNSID, RTM_DELNSID, RTM_GETNSID:
-				msg = NewNetnsMessage()
+			if s.Protocol == syscall.NETLINK_GENERIC {
+				switch h.Type {
+				case NLMSG_NOOP:
+					msg = NewNoopMessage()
+				case NLMSG_ERROR:
+					msg = NewErrorMessage()
+				case NLMSG_DONE:
+					msg = NewDoneMessage()
+				default:
+					msg = s.genericSocketRxMsg(h)
+				}
+			} else {
+				switch h.Type {
+				case NLMSG_NOOP:
+					msg = NewNoopMessage()
+				case NLMSG_ERROR:
+					msg = NewErrorMessage()
+				case NLMSG_DONE:
+					msg = NewDoneMessage()
+				case RTM_GETLINK:
+					msg = NewGenMessage()
+				case RTM_NEWLINK, RTM_DELLINK, RTM_SETLINK:
+					msg = NewIfInfoMessage()
+				case RTM_NEWADDR, RTM_DELADDR, RTM_GETADDR:
+					msg = NewIfAddrMessage()
+				case RTM_NEWROUTE, RTM_DELROUTE, RTM_GETROUTE:
+					msg = NewRouteMessage()
+				case RTM_NEWNEIGH, RTM_DELNEIGH, RTM_GETNEIGH:
+					msg = NewNeighborMessage()
+				case RTM_NEWNSID, RTM_DELNSID, RTM_GETNSID:
+					msg = NewNetnsMessage()
+				}
 			}
 			if msg == nil {
 				continue
@@ -505,6 +521,9 @@ func (s *Socket) gotx() {
 		bh.Len = mh.Len
 		if false {
 			fmt.Print("Tx: ", msg)
+		}
+		if s.Protocol == syscall.NETLINK_GENERIC {
+			s.genericSocketTxMsg(msg)
 		}
 		_, err = syscall.Write(s.fd, buf[:n])
 		if err != nil {

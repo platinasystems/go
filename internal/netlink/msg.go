@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"unsafe"
 
+	"github.com/platinasystems/go/elib"
 	"github.com/platinasystems/go/internal/accumulate"
 	"github.com/platinasystems/go/internal/indent"
 )
@@ -59,7 +60,7 @@ func StringOf(wt io.WriterTo) string {
 
 type Header struct {
 	Len      uint32
-	Type     MsgType
+	Type     uint16
 	Flags    HeaderFlags
 	Sequence uint32
 	Pid      uint32
@@ -68,7 +69,7 @@ type Header struct {
 const SizeofHeader = 4 + SizeofMsgType + SizeofHeaderFlags + 4 + 4
 
 func (h *Header) MsgHeader() *Header { return h }
-func (h *Header) MsgType() MsgType   { return h.Type }
+func (h *Header) MsgType() MsgType   { return MsgType(h.Type) }
 
 // Roundup netlink message length for proper alignment.
 func (h *Header) MsgLen() int {
@@ -902,4 +903,271 @@ func (m *NetnsMessage) WriteTo(w io.Writer) (int64, error) {
 	fprintAttrs(acc, netnsAttrKindNames, m.Attrs[:])
 	indent.Decrease(acc)
 	return acc.Tuple()
+}
+
+func NewGenericMessage() *GenericMessage {
+	m := pool.GenericMessage.Get().(*GenericMessage)
+	runtime.SetFinalizer(m, (*GenericMessage).Close)
+	m.nsid = DefaultNsid
+	m.Header.Len = SizeofGenericMessage
+	if m.Attrs != nil {
+		m.Attrs = m.Attrs[:0]
+	}
+	return m
+}
+
+type GenericMessage struct {
+	f    *genericFamily
+	nsid int
+	Header
+	Genericmsg
+	Attrs AttrVec
+}
+
+const SizeofGenericMessage = SizeofHeader + SizeofGenericmsg
+
+type Genericmsg struct {
+	Cmd     uint8
+	Version uint8
+	_       uint16
+}
+
+const SizeofGenericmsg = 4
+
+// HeaderFlags for Generic messages.
+const (
+	GENL_ADMIN_PERM = 1 << iota
+	GENL_CMD_CAP_DO
+	GENL_CMD_CAP_DUMP
+	GENL_CMD_CAP_HASPOL
+	GENL_UNS_ADMIN_PERM
+)
+
+const (
+	GENL_ID_CTRL = iota + NLMSG_MIN_TYPE
+	GENL_ID_VFS_DQUOT
+	GENL_ID_PMCRAID
+)
+
+type GenericMsgType uint16
+
+func (x GenericMsgType) String() string {
+	t := [...]string{
+		GENL_ID_CTRL:      "CTRL",
+		GENL_ID_VFS_DQUOT: "VFS_DQUOT",
+		GENL_ID_PMCRAID:   "PMCRAID",
+	}
+	return elib.StringerHex(t[:], int(x))
+}
+
+// GENL_ID_CTRL Controller commands.
+const (
+	CTRL_CMD_UNSPEC = iota
+	CTRL_CMD_NEWFAMILY
+	CTRL_CMD_DELFAMILY
+	CTRL_CMD_GETFAMILY
+	CTRL_CMD_NEWOPS
+	CTRL_CMD_DELOPS
+	CTRL_CMD_GETOPS
+	CTRL_CMD_NEWMCAST_GRP
+	CTRL_CMD_DELMCAST_GRP
+	CTRL_CMD_GETMCAST_GRP
+)
+
+var ctrlCmdNames = [...]string{
+	CTRL_CMD_UNSPEC:       "UNSPEC",
+	CTRL_CMD_NEWFAMILY:    "NEWFAMILY",
+	CTRL_CMD_DELFAMILY:    "DELFAMILY",
+	CTRL_CMD_GETFAMILY:    "GETFAMILY",
+	CTRL_CMD_NEWOPS:       "NEWOPS",
+	CTRL_CMD_DELOPS:       "DELOPS",
+	CTRL_CMD_GETOPS:       "GETOPS",
+	CTRL_CMD_NEWMCAST_GRP: "NEWMCAST_GRP",
+	CTRL_CMD_DELMCAST_GRP: "DELMCAST_GRP",
+	CTRL_CMD_GETMCAST_GRP: "GETMCAST_GRP",
+}
+
+// Control message attributes.
+const (
+	CTRL_ATTR_UNSPEC = iota
+	CTRL_ATTR_FAMILY_ID
+	CTRL_ATTR_FAMILY_NAME
+	CTRL_ATTR_VERSION
+	CTRL_ATTR_HDRSIZE
+	CTRL_ATTR_MAXATTR
+	CTRL_ATTR_OPS
+	CTRL_ATTR_MCAST_GROUPS
+	CTRL_ATTR_MAX
+)
+
+var genericCtrlAttrKindNames = [...]string{
+	CTRL_ATTR_UNSPEC:       "UNSPEC",
+	CTRL_ATTR_FAMILY_ID:    "FAMILY_ID",
+	CTRL_ATTR_FAMILY_NAME:  "FAMILY_NAME",
+	CTRL_ATTR_VERSION:      "VERSION",
+	CTRL_ATTR_HDRSIZE:      "HDRSIZE",
+	CTRL_ATTR_MAXATTR:      "MAXATTR",
+	CTRL_ATTR_OPS:          "OPS",
+	CTRL_ATTR_MCAST_GROUPS: "MCAST_GROUPS",
+}
+
+func (m *GenericMessage) Close() error {
+	runtime.SetFinalizer(m, nil)
+	repool(m)
+	return nil
+}
+
+func (m *GenericMessage) Nsid() *int { return &m.nsid }
+
+func (m *GenericMessage) Read(b []byte) (int, error) {
+	if len(b) < SizeofGenericMessage {
+		return 0, syscall.EOVERFLOW
+	}
+	n, _ := m.Header.Read(b)
+	*(*Genericmsg)(unsafe.Pointer(&b[n])) = m.Genericmsg
+	n += SizeofGenericmsg
+	n += m.Attrs.Set(b[n:])
+	return n, nil
+}
+
+func (m *GenericMessage) String() string { return StringOf(m) }
+
+func (m *GenericMessage) Write(b []byte) (int, error) {
+	if len(b) < SizeofGenericMessage {
+		return 0, syscall.EOVERFLOW
+	}
+	n, _ := m.Header.Write(b)
+	m.Genericmsg = *(*Genericmsg)(unsafe.Pointer(&b[n]))
+	n += SizeofGenericmsg
+	for n < len(b) {
+		a, v, next := nextAttr(b, n)
+		n = next
+		k := a.Kind()
+		m.Attrs.Validate(uint(k))
+		if m.f == nil {
+			switch k {
+			case CTRL_ATTR_FAMILY_ID:
+				m.Attrs[k] = Uint16AttrBytes(v)
+			case CTRL_ATTR_VERSION, CTRL_ATTR_HDRSIZE, CTRL_ATTR_MAXATTR:
+				m.Attrs[k] = Uint32AttrBytes(v)
+			case CTRL_ATTR_FAMILY_NAME:
+				m.Attrs[k] = StringAttrBytes(v[:len(v)-1])
+			case CTRL_ATTR_OPS:
+				m.Attrs[k] = StringAttrBytes(v[:])
+			case CTRL_ATTR_MCAST_GROUPS:
+				m.Attrs[k] = StringAttrBytes(v[:])
+			default:
+				return n, fmt.Errorf("%#v: unknown attr", k)
+			}
+		} else {
+			t := m.f.attrTypes[k]
+			switch t.(type) {
+			case Uint16Attr:
+				m.Attrs[k] = Uint16AttrBytes(v)
+			case Uint8Attr:
+				m.Attrs[k] = Uint8Attr(v[0])
+			default:
+				return n, fmt.Errorf("%#v: unknown attr type", t)
+			}
+		}
+	}
+	return n, nil
+}
+
+func (m *GenericMessage) WriteTo(w io.Writer) (int64, error) {
+	acc := accumulate.New(w)
+	defer acc.Fini()
+	if m.f != nil {
+		fmt.Fprint(acc, m.f.name, ": ", m.f.cmdNames[m.Cmd], "\n")
+	} else {
+		fmt.Fprint(acc, GenericMsgType(m.Header.Type), ":\n")
+	}
+	indent.Increase(acc)
+	if m.nsid != DefaultNsid {
+		fmt.Fprintln(acc, "nsid:", m.nsid)
+	}
+	m.Header.WriteTo(acc)
+	cmdNames := ctrlCmdNames[:]
+	if m.f != nil {
+		cmdNames = m.f.cmdNames
+	}
+	fmt.Fprintln(acc, "command:", elib.Stringer(cmdNames, int(m.Cmd)))
+	fmt.Fprintln(acc, "version:", m.Version)
+	indent.Decrease(acc)
+	kn := genericCtrlAttrKindNames[:]
+	if m.f != nil {
+		kn = m.f.attrNames
+	}
+	fprintAttrs(acc, kn, m.Attrs[:])
+	return acc.Tuple()
+}
+
+type genericSocket struct {
+	genericFamilyBySequence map[uint32]*genericFamily
+}
+
+type genericFamily struct {
+	name      string
+	id        uint16
+	maxAttrs  uint32
+	version   uint32
+	attrNames []string
+	attrTypes []Attr
+	cmdNames  []string
+}
+
+func (s *Socket) NewGenericRequest(f *genericFamily, command int) (msg *GenericMessage, err error) {
+	if s.Protocol != syscall.NETLINK_GENERIC {
+		panic("not generic socket")
+	}
+	if f.id == 0 {
+		if err = s.getGenericFamily(f); err != nil {
+			return
+		}
+	}
+	msg = NewGenericMessage()
+	msg.Attrs.Validate(uint(f.maxAttrs))
+	msg.Version = uint8(f.version)
+	msg.Type = f.id
+	msg.Version = uint8(f.version)
+	msg.Cmd = uint8(command)
+	msg.Flags = NLM_F_REQUEST
+	msg.f = f
+	return
+}
+
+func (s *Socket) getGenericFamily(f *genericFamily) (err error) {
+	req := NewGenericMessage()
+	req.Attrs.Validate(CTRL_ATTR_MAX)
+	req.Type = GENL_ID_CTRL
+	req.Flags = NLM_F_REQUEST
+	req.Cmd = CTRL_CMD_GETFAMILY
+	req.Attrs[CTRL_ATTR_FAMILY_NAME] = StringAttrBytes([]byte(f.name + "\x00"))
+	s.Tx <- req
+	rep := <-s.Rx
+	if v, ok := rep.(*GenericMessage); ok {
+		f.id = v.Attrs[CTRL_ATTR_FAMILY_ID].(Uint16Attr).Uint()
+		f.maxAttrs = v.Attrs[CTRL_ATTR_MAXATTR].(Uint32Attr).Uint()
+		f.version = v.Attrs[CTRL_ATTR_VERSION].(Uint32Attr).Uint()
+		return
+	}
+	err = fmt.Errorf("%v", rep)
+	return
+}
+func (s *Socket) genericSocketTxMsg(msg Message) {
+	h := msg.MsgHeader()
+	m := msg.(*GenericMessage)
+	if s.genericFamilyBySequence == nil {
+		s.genericFamilyBySequence = make(map[uint32]*genericFamily)
+	}
+	s.genericFamilyBySequence[h.Sequence] = m.f
+}
+func (s *Socket) genericSocketRxMsg(h *Header) (m *GenericMessage) {
+	m = NewGenericMessage()
+	m.f = s.genericFamilyBySequence[h.Sequence]
+	delete(s.genericFamilyBySequence, h.Sequence)
+	if m.f != nil {
+		m.Attrs.Validate(uint(m.f.maxAttrs))
+	}
+	return
 }
