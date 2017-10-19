@@ -1627,6 +1627,18 @@ func (a Uint64Attr) WriteTo(w io.Writer) (int64, error) {
 	return acc.Tuple()
 }
 
+type EmptyAttr Empty
+
+func (a EmptyAttr) attr()          {}
+func (a EmptyAttr) Set(v []byte)   {}
+func (a EmptyAttr) Size() int      { return 0 }
+func (a EmptyAttr) String() string { return "" }
+func (a EmptyAttr) WriteTo(w io.Writer) (int64, error) {
+	acc := accumulate.New(w)
+	defer acc.Fini()
+	return acc.Tuple()
+}
+
 const (
 	TUNNEL_ENCAP_NONE = iota
 	TUNNEL_ENCAP_FOU
