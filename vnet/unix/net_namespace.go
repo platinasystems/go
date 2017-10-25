@@ -873,7 +873,8 @@ func (m *net_namespace_main) add_gre_tunnel(intf *net_namespace_interface, msg *
 			netlink.IFLA_GRE_IGNORE_DF,
 			netlink.IFLA_GRE_ENCAP_LIMIT,
 			netlink.IFLA_GRE_FLOWINFO,
-			netlink.IFLA_GRE_FLAGS:
+			netlink.IFLA_GRE_FLAGS,
+			netlink.IFLA_GRE_FWMARK:
 		default:
 			panic(fmt.Errorf("unknown %v %v", kind, a))
 		}
