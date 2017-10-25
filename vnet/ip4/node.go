@@ -32,7 +32,13 @@ func GetFlow(r *vnet.Ref) Flow {
 	p := h.GetPayload()
 	return h.getFlow(p)
 }
-func (h *Header) GetFlow(payload []byte) Flow { return h.getFlow(unsafe.Pointer(&payload[0])) }
+func (h *Header) GetFlow(payload []byte) Flow {
+	p := (*byte)(nil)
+	if payload != nil {
+		p = &payload[0]
+	}
+	return h.getFlow(unsafe.Pointer(p))
+}
 
 func (h *Header) getFlow(p unsafe.Pointer) (f Flow) {
 	f.Protocol = h.Protocol
