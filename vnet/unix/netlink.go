@@ -115,8 +115,8 @@ func (ns *net_namespace) getTuntapInterface(ifindex uint32) (intf *tuntap_interf
 type dummy_interface struct {
 	isAdminUp bool
 	// Current set of ip4/ip6 addresses for dummy interface collected from netlink IfAddrMessage.
-	ip4Addrs map[ip4.Address]ip.FibIndex
-	ip6Addrs map[ip6.Address]ip.FibIndex
+	ip4Addrs map[ip4.Prefix]ip.FibIndex
+	ip6Addrs map[ip6.Prefix]ip.FibIndex
 }
 
 // True if given netlink NEWLINK message is for a dummy interface as indicated by IFLA_INFO_KIND.
@@ -141,15 +141,23 @@ func (ns *net_namespace) getDummyInterface(ifindex uint32) (i *dummy_interface, 
 func (i *dummy_interface) addDelDummyPuntPrefixes(m *Main, isDel bool) {
 	for addr, fi := range i.ip4Addrs {
 		m4 := ip4.GetMain(m.v)
-		p := ip4.Prefix{Address: addr, Len: 32}
+		p := ip4.Prefix{Address: addr.Address, Len: 32}
 		q := p.ToIpPrefix()
 		m4.AddDelRoute(&q, fi, ip.AdjPunt, isDel)
+
+		p1 := ip4.Prefix{Address: addr.Address, Len: addr.Len}
+		q1 := p1.ToIpPrefix()
+		m4.AddDelRoute(&q1, fi, ip.AdjPunt, isDel)
 	}
 	for addr, fi := range i.ip6Addrs {
 		m6 := ip6.GetMain(m.v)
-		p := ip6.Prefix{Address: addr, Len: 128}
+		p := ip6.Prefix{Address: addr.Address, Len: 128}
 		q := p.ToIpPrefix()
 		m6.AddDelRoute(&q, fi, ip.AdjPunt, isDel)
+
+		p1 := ip6.Prefix{Address: addr.Address, Len: addr.Len}
+		q1 := p1.ToIpPrefix()
+		m6.AddDelRoute(&q1, fi, ip.AdjPunt, isDel)
 	}
 }
 func (ns *net_namespace) knownInterface(i uint32) (ok bool) {
@@ -578,16 +586,20 @@ func (e *netlinkEvent) ip4IfaddrMsg(v *netlink.IfAddrMessage) (err error) {
 	if di, ok := e.ns.getDummyInterface(v.Index); ok {
 		fi := e.ns.fibIndexForNamespace()
 		q := p.ToIpPrefix()
+
+		p1 := ip4Prefix(v.Attrs[netlink.IFA_ADDRESS], 32)
+		q1 := p1.ToIpPrefix()
 		if di.isAdminUp || isDel {
 			m4.AddDelRoute(&q, fi, ip.AdjPunt, isDel)
+			m4.AddDelRoute(&q1, fi, ip.AdjPunt, isDel)
 		}
 		if isDel {
-			delete(di.ip4Addrs, p.Address)
+			delete(di.ip4Addrs, p)
 		} else {
 			if di.ip4Addrs == nil {
-				di.ip4Addrs = make(map[ip4.Address]ip.FibIndex)
+				di.ip4Addrs = make(map[ip4.Prefix]ip.FibIndex)
 			}
-			di.ip4Addrs[p.Address] = fi
+			di.ip4Addrs[p] = fi
 		}
 	} else if si, intf, ok := e.ns.siForIfIndex(v.Index); ok {
 		e.ns.validateFibIndexForSi(si, intf)
