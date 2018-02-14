@@ -1,5 +1,10 @@
 ---
 
+- include: ../../playbooks/installation/uninstall_packages.yml
+
+- include: ../../playbooks/installation/quagga_install.yml
+
+
 - hosts: server_emulator
   become: true
 
@@ -25,11 +30,7 @@
       blockinfile:
         path: "{{ quagga_ospf_conf_file }}"
         marker: ""
-        block: |
-          router ospf
-          ospf router-id {{ ansible_ssh_host }}
-          network 192.168.3.0/24 area 0.0.0.0
-          network 192.168.21.0/24 area 0.0.0.0
+        block: "{{ lookup('file', '../../files/{{inventory_hostname}}/ospf_vlan.conf') }}"
 
     - file:
         path: "{{ vlan_log_dir }}"
@@ -39,8 +40,8 @@
       test_on_transit_vlan_configuration:
         switch_name: "{{ inventory_hostname }}"
         leaf_list: "{{ groups['leaf'] }}"
-        spine_list: "{{ groups['spine'] }}"
-        eth_list: "3,21"
+        config_file: "{{ lookup('file', '../../files/{{inventory_hostname}}/ospf_vlan.conf') }}"
+        eth_list: "1,21,3,19"
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
         log_dir_path: "{{ vlan_log_dir }}"
       register: module_out
