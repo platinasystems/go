@@ -9,6 +9,9 @@ import (
 	"github.com/platinasystems/go/internal/redis/rpc/args"
 	"github.com/platinasystems/go/internal/redis/rpc/reply"
 	"github.com/platinasystems/go/internal/sockfile"
+	"strings"
+	"strconv"
+	"fmt"
 )
 
 var empty = struct{}{}
@@ -131,6 +134,21 @@ func (rpc *Rpc) Hset(key, id string, value []byte) (int, error) {
 	}
 	defer cl.Close()
 	var r reply.Hset
+	id_arr:=strings.Split(id, ".")
+	if len(id_arr)==3 && id_arr[2]=="speed" {
+		sub_id_arr := strings.Split(id_arr[1], "-")
+		val, err := strconv.Atoi(sub_id_arr[2])
+		if err != nil{
+			return 0,err
+		}
+		if val > 1 {
+			speed := string(value[:])
+			if speed == "auto" {
+				return 0, fmt.Errorf("hset: ERROR invalid speed")
+			}
+		}
+	}
+
 	err = cl.Call(rpc.Name+".Hset", args.Hset{key, id, value}, &r)
 	if err != nil {
 		return 0, err
