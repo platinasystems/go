@@ -32,6 +32,20 @@
         marker: ""
         block: "{{ lookup('file', '../../files/{{inventory_hostname}}/ospf_vlan.conf') }}"
 
+    - name: Take backup of /etc/network/interfaces
+      copy:
+        src: "{{ network_interfaces_file }}"
+        dest: "{{ network_interfaces_file_bck }}"
+        remote_src: true
+
+    - name: Copy ipv4 configuration interfaces network file
+      copy:
+        src: "../../files/{{inventory_hostname}}/vlan_on_transit_interfaces"
+        dest: "{{ network_interfaces_file }}"
+
+    - name: Restart goes
+      command: goes restart
+
     - file:
         path: "{{ vlan_log_dir }}"
         state: directory
@@ -80,6 +94,17 @@
       service:
         name: quagga
         state: restarted
+
+    - name: Restore backup of /etc/network/interfaces
+      copy:
+        src: "{{ network_interfaces_file_bck }}"
+        dest: "{{ network_interfaces_file }}"
+        remote_src: true
+
+    - name: Remove backup file
+      file:
+        path: "{{ network_interfaces_file_bck }}"
+        state: absent
 
     - name: Restart goes
       command: goes restart
