@@ -118,7 +118,11 @@ def execute_commands(module, cmd):
     # command output as value in the hash dictionary
     exec_time = run_cli(module, 'date +%Y%m%d%T')
     key = '{0} {1} {2}'.format(module.params['switch_name'], exec_time, cmd)
-    HASH_DICT[key] = out
+
+    if out:
+        HASH_DICT[key] = out[:512] if len(out.encode('utf-8')) > 512 else out
+    else:
+        HASH_DICT[key] = out
 
     return out
 
@@ -227,7 +231,7 @@ def main():
     # Create a log file
     log_file_path = module.params['log_dir_path']
     log_file_path += '/{}.log'.format(module.params['hash_name'])
-    log_file = open(log_file_path, 'w')
+    log_file = open(log_file_path, 'a')
     for key, value in HASH_DICT.iteritems():
         log_file.write(key)
         log_file.write('\n')
