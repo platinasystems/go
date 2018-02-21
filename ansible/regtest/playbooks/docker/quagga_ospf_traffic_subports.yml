@@ -336,7 +336,9 @@
       - "~/docker_move.sh"
       - "{{ docker_compose_file }}"
 
-    - command: "rm -rf ~/volumes/quagga/*"
+    - shell: rm -rf ~/volumes/quagga/*
+
+    - command: ip -all netns del
 
     - name: Restart goes
       command: "goes restart"
