@@ -25,3 +25,13 @@ And then run the bird_bgp_peering_ebgp_route_advertise.yml playbook by executing
 ```
     ansible-playbook -i hosts_testbed2 playbooks/bgp/bird_bgp_peering_ebgp_route_advertise.yml -K
 ```
+
+
+NOTES:
+-----
+
+Each playbook run generate logs that gets stored in redis db on invader28 and on all invaders at location /var/log/regression/.
+
+To access redis on invader28, use this command: `redis-cli -p 9090`
+
+Log file on an invader consists of configuration done, verification commands executed on that invader followed by verification/result details and goes status.
