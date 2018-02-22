@@ -1,0 +1,20 @@
+---
+
+- hosts: leaf:spine
+  become: true
+  tasks:
+    - name: Restore backup of /etc/quagga/ospfd.conf
+      copy:
+        src: "{{ quagga_ospf_conf_file_bck }}"
+        dest: "{{ quagga_ospf_conf_file }}"
+        remote_src: true
+
+    - name: Remove backup file
+      file:
+        path: "{{ quagga_ospf_conf_file_bck }}"
+        state: absent
+
+    - name: Restart quagga
+      service:
+        name: quagga
+        state: restarted

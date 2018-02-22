@@ -66,29 +66,9 @@
 
     - include: ../../playbooks/get_goes_version_and_tags.yml
 
-    - name: Restore backup of /etc/quagga/ospfd.conf
-      copy:
-        src: "{{ quagga_ospf_conf_file_bck }}"
-        dest: "{{ quagga_ospf_conf_file }}"
-        remote_src: true
 
-    - name: Remove backup file
-      file:
-        path: "{{ quagga_ospf_conf_file_bck }}"
-        state: absent
-
-    - name: Restore backup of /etc/network/interfaces
-      copy:
-        src: /etc/network/interfaces.bck
-        dest: /etc/network/interfaces
-        remote_src: true
-
-    - name: Remove backup file
-      file:
-        path: /etc/network/interfaces.bck
-        state: absent
-
-    - command: "goes restart"
+- include: quagga_ospf_traffic_reset.yml
+  when: reset_config
 
 
 - hosts: server_emulator
