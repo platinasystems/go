@@ -1,5 +1,5 @@
 ---
-ansible_log_file_path: ~/ansible.log
+reset_config: True
 
 bgp_log_dir: /var/log/regression/bgp
 ospf_log_dir: /var/log/regression/ospf

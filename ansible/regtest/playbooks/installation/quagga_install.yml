@@ -100,7 +100,3 @@
         - "ip router"
         - "net"
         - "metric-style"
-
-    - file:
-        path: "{{ ansible_log_file_path }}"
-        state: absent
