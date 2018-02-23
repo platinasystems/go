@@ -1,0 +1,23 @@
+---
+
+- hosts: leaf:spine
+  become: true
+  tasks:
+    - name: Restore backup of /etc/frr/bgpd.conf
+      copy:
+        src: "{{ frr_bgp_conf_file_bck }}"
+        dest: "{{ frr_bgp_conf_file }}"
+        remote_src: true
+
+    - name: Remove backup file
+      file:
+        path: "{{ frr_bgp_conf_file_bck }}"
+        state: absent
+
+    - name: Delete dummy interface
+      command: "ip link del dummy0 type dummy"
+
+    - name: Restart frr
+      service:
+        name: frr
+        state: restarted

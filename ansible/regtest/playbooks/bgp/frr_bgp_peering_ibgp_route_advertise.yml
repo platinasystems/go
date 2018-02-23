@@ -74,24 +74,10 @@
 
     - include: ../../playbooks/get_goes_version_and_tags.yml
 
-    - name: Restore backup of /etc/frr/bgpd.conf
-      copy:
-        src: "{{ frr_bgp_conf_file_bck }}"
-        dest: "{{ frr_bgp_conf_file }}"
-        remote_src: true
 
-    - name: Remove backup file
-      file:
-        path: "{{ frr_bgp_conf_file_bck }}"
-        state: absent
+- include: frr_bgp_peering_ibgp_route_advertise_reset.yml
+  when: reset_config
 
-    - name: Delete dummy interface
-      command: "ip link del dummy0 type dummy"
-
-    - name: Restart frr
-      service:
-        name: frr
-        state: restarted
 
 
 - hosts: server_emulator

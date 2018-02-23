@@ -85,24 +85,9 @@
 
     - include: ../../playbooks/get_goes_version_and_tags.yml
 
-    - name: Restore backup of /etc/frr/bgpd.conf
-      copy:
-        src: "{{ frr_bgp_conf_file_bck }}"
-        dest: "{{ frr_bgp_conf_file }}"
-        remote_src: true
 
-    - name: Remove backup file
-      file:
-        path: "{{ frr_bgp_conf_file_bck }}"
-        state: absent
-
-    - name: Delete dummy interface
-      command: "ip link del dummy0 type dummy"
-
-    - name: Restart quagga
-      service:
-        name: quagga
-        state: restarted
+- include: frr_bgp_peering_loop_prevention_reset.yml
+  when: reset_config
 
 
 - hosts: server_emulator
