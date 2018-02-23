@@ -17,7 +17,7 @@
     - name: Delete dummy interface
       command: "ip link del dummy0 type dummy"
 
-    - name: Restart quagga
+    - name: Restart frr
       service:
-        name: quagga
+        name: frr
         state: restarted
