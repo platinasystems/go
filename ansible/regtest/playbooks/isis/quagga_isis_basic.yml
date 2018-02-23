@@ -142,43 +142,9 @@
 
     - include: ../../playbooks/get_goes_version_and_tags.yml
 
-    - name: Restore backup of /etc/quagga/isisd.conf
-      copy:
-        src: "{{ quagga_isis_conf_file_bck }}"
-        dest: "{{ quagga_isis_conf_file }}"
-        remote_src: true
 
-    - name: Remove backup file
-      file:
-        path: "{{ quagga_isis_conf_file_bck }}"
-        state: absent
-
-    - name: Update interface ip and mtu
-      update_eth_ip_mtu:
-        switch_name: "{{ inventory_hostname }}"
-        config_file: "{{ lookup('file', '../../files/{{inventory_hostname}}/update_eth_ip_mtu') }}"
-        revert: True
-
-    - name: Delete dummy interface
-      command: "ip link del dummy0 type dummy"
-
-    - name: Restore backup of /etc/network/interfaces
-      copy:
-        src: /etc/network/interfaces.bck
-        dest: /etc/network/interfaces
-        remote_src: true
-
-    - name: Remove backup file
-      file:
-        path: /etc/network/interfaces.bck
-        state: absent
-
-    - command: "goes restart"
-
-    - name: Restart quagga
-      service:
-        name: quagga
-        state: restarted
+- include: quagga_isis_basic_reset.yml
+  when: reset_config
 
 
 - hosts: server_emulator
