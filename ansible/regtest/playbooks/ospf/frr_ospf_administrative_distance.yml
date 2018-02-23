@@ -68,22 +68,9 @@
 
     - include: ../../playbooks/get_goes_version_and_tags.yml
 
-    - name: Restore backup of /etc/frr/ospfd.conf
-      copy:
-        src: "{{ frr_ospf_conf_file_bck }}"
-        dest: "{{ frr_ospf_conf_file }}"
-        remote_src: true
 
-    - name: Remove backup file
-      file:
-        path: "{{ frr_ospf_conf_file_bck }}"
-        state: absent
-
-    - name: Restart frr
-      service:
-        name: frr
-        state: restarted
-
+- include: frr_ospf_administrative_distance_reset.yml
+  when: reset_config
 
 
 - hosts: server_emulator
