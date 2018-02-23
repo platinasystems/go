@@ -111,15 +111,9 @@
   tasks:
     - include: ../../playbooks/get_goes_version_and_tags.yml
 
-    - name: Remove config file
-      file:
-        path: "{{ gobgp_bgp_conf_file }}"
-        state: absent
 
-    - name: Remove advertise route
-      add_remove_route:
-        switch_name: "{{ inventory_hostname }}"
-        remove: True
+- include: gobgp_bgp_peering_loop_prevention_reset.yml
+  when: reset_config
 
 
 - hosts: server_emulator

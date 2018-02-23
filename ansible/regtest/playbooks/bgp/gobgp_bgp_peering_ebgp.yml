@@ -61,10 +61,9 @@
 
     - include: ../../playbooks/get_goes_version_and_tags.yml
 
-    - name: Remove config file
-      file:
-        path: "{{ gobgp_bgp_conf_file }}"
-        state: absent
+
+- include: gobgp_bgp_peering_ebgp_reset.yml
+  when: reset_config
 
 
 - hosts: server_emulator

@@ -67,13 +67,9 @@
 
     - include: ../../playbooks/get_goes_version_and_tags.yml
 
-    - name: Remove config file
-      file:
-        path: "{{ gobgp_bgp_conf_file }}"
-        state: absent
 
-    - name: Delete dummy interface
-      command: "ip link del dummy0 type dummy"
+- include: gobgp_bgp_peering_ibgp_route_advertise_reset.yml
+  when: reset_config
 
 
 - hosts: server_emulator
