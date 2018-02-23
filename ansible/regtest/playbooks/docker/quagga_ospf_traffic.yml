@@ -240,102 +240,16 @@
         log_content: "{{ logs['content'] | b64decode }}"
       delegate_to: 127.0.0.1
 
-    - name: Bring down all containers
-      docker_updown:
-        config_file: "{{ lookup('file', '../../group_vars/{{ inventory_hostname }}/{{ item }}') }}"
-        state: 'down'
-      with_items:
-      - "{{ containers }}"
-
-    - name: Run docker-compose down
-      shell: "docker-compose down"
-      args:
-        chdir: ~/
-
-
-- hosts: spine[1]
-  become: true
-  ignore_errors: yes
-
-  vars:
-  - containers: ['R9', 'R10', 'R11', 'R12', 'R13', 'R14', 'R15', 'R16']
-
-  tasks:
-    - name: Bring down all containers
-      docker_updown:
-        config_file: "{{ lookup('file', '../../group_vars/{{ inventory_hostname }}/{{ item }}') }}"
-        state: 'down'
-      with_items:
-      - "{{ containers }}"
-
-    - name: Run docker-compose down
-      shell: "docker-compose down"
-      args:
-        chdir: ~/
-
-
-- hosts: leaf[0]
-  become: true
-  ignore_errors: yes
-
-  vars:
-  - containers: ['R17', 'R18', 'R19', 'R20', 'R21', 'R22', 'R23', 'R24']
-
-  tasks:
-    - name: Bring down all containers
-      docker_updown:
-        config_file: "{{ lookup('file', '../../group_vars/{{ inventory_hostname }}/{{ item }}') }}"
-        state: 'down'
-      with_items:
-      - "{{ containers }}"
-
-    - name: Run docker-compose down
-      shell: "docker-compose down"
-      args:
-        chdir: ~/
-
-
-- hosts: leaf[1]
-  become: true
-  ignore_errors: yes
-
-  vars:
-  - containers: ['R25', 'R26', 'R27', 'R28', 'R29', 'R30', 'R31', 'R32']
-
-  tasks:
-    - name: Bring down all containers
-      docker_updown:
-        config_file: "{{ lookup('file', '../../group_vars/{{ inventory_hostname }}/{{ item }}') }}"
-        state: 'down'
-      with_items:
-      - "{{ containers }}"
-
-    - name: Run docker-compose down
-      shell: "docker-compose down"
-      args:
-        chdir: ~/
-
 
 - hosts: leaf:spine
   become: true
   ignore_errors: yes
   tasks:
-    - name: Remove docker_move and docker-compose files
-      file:
-        path: "{{ item }}"
-        state: absent
-      with_items:
-      - "~/docker_move.sh"
-      - "{{ docker_compose_file }}"
-
-    - shell: rm -rf ~/volumes/quagga/*
-
-    - command: ip -all netns del
-
-    - name: Restart goes
-      command: "goes restart"
-
     - include: ../../playbooks/get_goes_version_and_tags.yml
+
+
+- include: quagga_ospf_traffic_reset.yml
+  when: reset_config
 
 
 - hosts: server_emulator
