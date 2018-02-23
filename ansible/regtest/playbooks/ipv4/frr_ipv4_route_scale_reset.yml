@@ -1,0 +1,25 @@
+---
+
+- hosts: leaf:spine
+  become: true
+  tasks:
+    - name: Restore backup of /etc/network/interfaces
+      copy:
+        src: "{{ network_interfaces_file_bck }}"
+        dest: "{{ network_interfaces_file }}"
+        remote_src: true
+
+    - name: Remove backup file
+      file:
+        path: "{{ network_interfaces_file_bck }}"
+        state: absent
+
+    - file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+      - /var/log/linux_routes.txt
+      - /var/log/frr_routes.txt
+
+    - name: Restart goes
+      command: "goes restart"
