@@ -16,13 +16,13 @@
 
     - name: Restore backup of /etc/network/interfaces
       copy:
-        src: /etc/network/interfaces.bck
-        dest: /etc/network/interfaces
+        src: "{{ network_interfaces_file_bck }}"
+        dest: "{{ network_interfaces_file }}"
         remote_src: true
 
     - name: Remove backup file
       file:
-        path: /etc/network/interfaces.bck
+        path: "{{ network_interfaces_file_bck }}"
         state: absent
 
     - command: "goes restart"

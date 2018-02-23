@@ -17,8 +17,8 @@
   tasks:
     - name: Take backup of /etc/network/interfaces file
       copy:
-        src: /etc/network/interfaces
-        dest: /etc/network/interfaces.bck
+        src: "{{ network_interfaces_file }}"
+        dest: "{{ network_interfaces_file_bck }}"
         remote_src: true
 
     - name: Take backup of /etc/quagga/ospfd.conf
