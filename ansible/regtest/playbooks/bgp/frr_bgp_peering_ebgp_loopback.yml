@@ -78,7 +78,7 @@
     - include: ../../playbooks/get_goes_version_and_tags.yml
 
 
- -include: frr_bgp_peering_ebgp_loopback_reset.yml
+- include: frr_bgp_peering_ebgp_loopback_reset.yml
   when: reset_config
 
 
