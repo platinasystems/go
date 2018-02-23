@@ -72,24 +72,9 @@
 
     - include: ../../playbooks/get_goes_version_and_tags.yml
 
-    - name: Restore backup of /etc/bird/bird.conf
-      copy:
-        src: "{{ bird_conf_file_bck }}"
-        dest: "{{ bird_conf_file }}"
-        remote_src: true
 
-    - name: Remove backup file
-      file:
-        path: "{{ bird_conf_file_bck }}"
-        state: absent
-
-    - name: Delete dummy interface
-      command: "ip link del dummy0 type dummy"
-
-    - name: Restart bird
-      service:
-        name: bird
-        state: restarted
+- include: bird_ospf_with_different_areas_reset.yml
+  when: reset_config
 
 
 - hosts: server_emulator
