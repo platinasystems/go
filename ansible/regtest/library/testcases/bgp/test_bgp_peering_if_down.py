@@ -144,6 +144,7 @@ def check_bgp_neighbors(module):
     :param module: The Ansible module to fetch input parameters.
     """
     global RESULT_STATUS, HASH_DICT
+    neighbor_count = 0
     failure_summary = HASH_DICT.get('result.detail', '')
     switch_name = module.params['switch_name']
     config_file = module.params['config_file'].splitlines()
@@ -156,6 +157,7 @@ def check_bgp_neighbors(module):
         for line in config_file:
             line = line.strip()
             if 'neighbor' in line and 'remote-as' in line:
+                neighbor_count += 1
                 config = line.split()
                 neighbor_ip = config[1]
                 remote_as = config[3]
@@ -166,13 +168,12 @@ def check_bgp_neighbors(module):
                     failure_summary += 'is not present in the output of '
                     failure_summary += 'command {}\n'.format(cmd)
 
-                if 'BGP state = Established' not in bgp_out:
-                    RESULT_STATUS = False
-                    failure_summary += 'On switch {} '.format(switch_name)
-                    failure_summary += 'bgp state of neighbor {} '.format(
-                        neighbor_ip)
-                    failure_summary += 'is not Established in the output of '
-                    failure_summary += 'command {}\n'.format(cmd)
+        if bgp_out.count('BGP state = Established') != neighbor_count:
+            RESULT_STATUS = False
+            failure_summary += 'On switch {} '.format(switch_name)
+            failure_summary += 'bgp state of all/some neighbors '
+            failure_summary += 'are not Established in the output of '
+            failure_summary += 'command {}\n'.format(cmd)
     else:
         RESULT_STATUS = False
         failure_summary += 'On switch {} '.format(switch_name)

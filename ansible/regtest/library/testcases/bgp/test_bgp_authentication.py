@@ -127,6 +127,7 @@ def verify_bgp_authentication(module):
     """
     global RESULT_STATUS, HASH_DICT
     failure_summary = ''
+    neighbor_count = 0
     switch_name = module.params['switch_name']
     package_name = module.params['package_name']
     config_file = module.params['config_file'].splitlines()
@@ -146,6 +147,7 @@ def verify_bgp_authentication(module):
         for line in config_file:
             line = line.strip()
             if 'neighbor' in line and 'remote-as' in line:
+                neighbor_count += 1
                 config = line.split()
                 neighbor_ip = config[1]
                 remote_as = config[3]
@@ -156,19 +158,18 @@ def verify_bgp_authentication(module):
                     failure_summary += 'is not present in the output of '
                     failure_summary += 'command {}\n'.format(cmd)
 
-                if 'BGP state = Established' not in bgp_out:
-                    RESULT_STATUS = False
-                    failure_summary += 'On switch {} '.format(switch_name)
-                    failure_summary += 'bgp state of neighbor {} '.format(
-                        neighbor_ip)
-                    failure_summary += 'is not Established in the output of '
-                    failure_summary += 'command {}\n'.format(cmd)
+        if bgp_out.count('BGP state = Established') != neighbor_count:
+            RESULT_STATUS = False
+            failure_summary += 'On switch {} '.format(switch_name)
+            failure_summary += 'bgp state of all/some neighbors '
+            failure_summary += 'are not Established in the output of '
+            failure_summary += 'command {}\n'.format(cmd)
     else:
         RESULT_STATUS = False
         failure_summary += 'On switch {} '.format(switch_name)
         failure_summary += 'bgp neighbor relationship cannot be verified '
         failure_summary += 'because output of command {} '.format(cmd)
-        failure_summary += 'is None\n'
+        failure_summary += 'is None'
 
     HASH_DICT['result.detail'] = failure_summary
 
