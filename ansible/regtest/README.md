@@ -35,3 +35,15 @@ Each playbook run generate logs that gets stored in redis db on invader28 and on
 To access redis on invader28, use this command: `redis-cli -p 9090`
 
 Log file on an invader consists of configuration done, verification commands executed on that invader followed by verification/result details and goes status.
+
+If you want to reproduce any issue or debug the config then set reset_config flag to False while running the playbook (by default it's set to True). This will execute the playbook without resetting the config/setup. You can then ssh into any invaders and see the actual config present in respective package directory. For example:
+```
+    ansible-playbook -i hosts_testbed2 playbooks/bgp/frr_bgp_peering_ibgp.yml -K -e reset_config=False
+```
+
+Once you are done with debugging and wants to reset the config/setup then just run reset playbook. For example:
+```
+    ansible-playbook -i hosts_testbed2 playbooks/bgp/frr_bgp_peering_ibgp_reset.yml -K
+```
+
+Each playbook has it's own reset playbook which is appended with '_reset.yml'. For example, playbooks/ospf/quagga_ospf_basic.yml playbook has it's own reset playbook (which by default get's executed) named playbooks/ospf/quagga_ospf_basic_reset.yml
