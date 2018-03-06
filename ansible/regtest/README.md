@@ -46,4 +46,6 @@ Once you are done with debugging and wants to reset the config/setup then just r
     ansible-playbook -i hosts_testbed2 playbooks/bgp/frr_bgp_peering_ibgp_reset.yml -K
 ```
 
-Each playbook has it's own reset playbook which is appended with '_reset.yml'. For example, playbooks/ospf/quagga_ospf_basic.yml playbook has it's own reset playbook (which by default get's executed) named playbooks/ospf/quagga_ospf_basic_reset.yml
+Each playbook has it's own reset playbook which is appended with '_reset.yml', except for port provision playbooks. For example, `playbooks/ospf/quagga_ospf_basic.yml` playbook has it's own reset playbook (which by default get's executed) named `playbooks/ospf/quagga_ospf_basic_reset.yml`
+
+There is only one `port_provision_reset.yml` playbook for all port provision playbooks in `playbooks/port_provision`
