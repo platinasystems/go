@@ -12,7 +12,7 @@
         start_time: "{{ start_time.stdout }}"
 
 
-- hosts: leaf[1]:spine[1]
+- hosts: leaf[0]:spine[0]
   become: true
   tasks:
     - file:
@@ -79,7 +79,7 @@
     - name: Initiate iperf client and verify traffic
       verify_iperf_traffic:
         switch_name: "{{ inventory_hostname }}"
-        leaf_server: "{{ groups['leaf'][1] }}"
+        leaf_server: "{{ groups['leaf'][0] }}"
         eth_list: "1,3,5,7,9,11,13,15"
         is_subports: True
         two_lanes: True
@@ -104,30 +104,11 @@
         log_content: "{{ logs['content'] | b64decode }}"
       delegate_to: 127.0.0.1
 
-    - name: Stop iperf server instances
-      command: "pkill iperf"
-
-    - shell: "rm ~/iperf-parallel-servers.sh"
-
     - include: ../../playbooks/get_goes_version_and_tags.yml
 
-    - name: Restore backup of /etc/goes/start
-      copy:
-        src: "{{ goes_start_file_bck }}"
-        dest: "{{ goes_start_file }}"
-        remote_src: true
 
-    - name: Remove backup file
-      file:
-        path: "{{ goes_start_file_bck }}"
-        state: absent
-
-    - name: Remove portprovision file
-      file:
-        path: /etc/goes/portprovision
-        state: absent
-
-    - command: "goes restart"
+- include: port_provision_reset.yml
+  when: reset_config
 
 
 - hosts: server_emulator

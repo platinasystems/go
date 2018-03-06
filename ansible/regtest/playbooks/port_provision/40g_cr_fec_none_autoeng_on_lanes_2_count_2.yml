@@ -104,30 +104,11 @@
         log_content: "{{ logs['content'] | b64decode }}"
       delegate_to: 127.0.0.1
 
-    - name: Stop iperf server instances
-      command: "pkill iperf"
-
-    - shell: "rm ~/iperf-parallel-servers.sh"
-
     - include: ../../playbooks/get_goes_version_and_tags.yml
 
-    - name: Restore backup of /etc/goes/start
-      copy:
-        src: "{{ goes_start_file_bck }}"
-        dest: "{{ goes_start_file }}"
-        remote_src: true
 
-    - name: Remove backup file
-      file:
-        path: "{{ goes_start_file_bck }}"
-        state: absent
-
-    - name: Remove portprovision file
-      file:
-        path: /etc/goes/portprovision
-        state: absent
-
-    - command: "goes restart"
+- include: port_provision_reset.yml
+  when: reset_config
 
 
 - hosts: server_emulator
