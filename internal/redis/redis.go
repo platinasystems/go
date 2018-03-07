@@ -126,6 +126,19 @@ func Connect() (redis.Conn, error) {
 	return redis.NewConn(conn, rdtimeout, wrtimeout), nil
 }
 
+func NotifyRedisIfMgtIpChange(itfname string,address string)(err error){
+	conn, err := Connect()
+	if err != nil {
+		return
+	}
+	defer conn.Close()
+	_,err = conn.Do("LISTENONNEWIP",itfname,address)
+	if err != nil{
+		return
+	}
+	return
+}
+
 func Get(key string) (s string, err error) {
 	conn, err := Connect()
 	if err != nil {
