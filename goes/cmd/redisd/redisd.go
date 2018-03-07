@@ -40,6 +40,7 @@ const (
 	PubSock = sockfile.Dir + "/redis-pub"
 )
 
+var Label map[string]chan bool
 type Command struct {
 	// Machines may restrict redisd listening to this list of net devices.
 	// If unset, the local admin may restrict this through
@@ -235,6 +236,27 @@ func (c *Command) Main(args ...string) (err error) {
 		redisd.listen(args...)
 	}(&c.redisd, Sock, args...)
 
+	//check if eth0 ip changes create new server listening on new ip and notification on channel
+	go func() {
+		for {
+			label,err := c.redisd.Hget(redis.DefaultHash, "label")
+			if err == nil{
+				addr,err :=c.redisd.Hget(redis.DefaultHash, "eth0addr")
+				delete(c.redisd.published[redis.DefaultHash],"label")
+				delete(c.redisd.published[redis.DefaultHash],"eth0addr")
+				ifname:=string(label)
+				address:=string(addr)
+				if ifname=="eth0" || err==nil{
+					if(address!=""){
+						Label[address+":6379"]<-true
+					}
+					c.redisd.listen(ifname)
+				}
+			}
+			time.Sleep(100 * time.Millisecond)
+			}
+	}()
+
 	c.pubconn, err = sockfile.ListenUnixgram(publisher.FileName)
 	if err != nil {
 		return
@@ -412,6 +434,9 @@ func (redisd *Redisd) unassign(key string) error {
 }
 
 func (redisd *Redisd) listen(names ...string) {
+	if Label == nil{
+		Label=make(map[string]chan bool)
+	}
 	for _, name := range names {
 		dev, err := net.InterfaceByName(name)
 		if err != nil {
@@ -461,11 +486,25 @@ func (redisd *Redisd) listen(names ...string) {
 				fmt.Fprint(os.Stderr, id, ": ", err, "\n")
 			} else {
 				srvs = append(srvs, srv)
+				Label[srv.Addr] =make(chan bool)
+				//Close previous tcp connection if ip changes.Issue #80
+				go closeConn(srv)
 				go srv.Start()
 				fmt.Println("listen:", id)
 			}
 		}
 		redisd.devs[name] = srvs
+	}
+}
+
+//Close previous connection if ip changes
+func closeConn(srv *grs.Server){
+	for{
+		select {
+		case <-Label[srv.Addr]:
+			srv.Close()
+			break
+		}
 	}
 }
 
