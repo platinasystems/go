@@ -184,7 +184,7 @@ def verify_port_links(module):
                 cmd = 'goes hget platina vnet.eth-{}-{}.speed'.format(
                     eth, port)
                 out = execute_commands(module, cmd)
-                if speed not in out:
+                if out not in speed:
                     RESULT_STATUS = False
                     failure_summary += 'On switch {} '.format(switch_name)
                     failure_summary += 'speed of the interface '
@@ -249,6 +249,7 @@ def verify_port_links(module):
                 cmd = 'goes hget platina vnet.eth-{}-{}.speed'.format(
                     eth, subport)
                 out = execute_commands(module, cmd)
+                speed = 'auto' if speed == 'auto10g' else speed
                 if out not in speed:
                     RESULT_STATUS = False
                     failure_summary += 'On switch {} '.format(switch_name)
