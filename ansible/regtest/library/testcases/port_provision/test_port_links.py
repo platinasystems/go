@@ -315,7 +315,7 @@ def main():
             speed=dict(required=False, type='str'),
             media=dict(required=False, type='str'),
             fec=dict(required=False, type='str', default=''),
-            leaf_server=dict(required=False, type='str'),
+            leaf_server=dict(required=False, type='str', default=''),
             two_lanes=dict(required=False, type='bool', default=False),
             hash_name=dict(required=False, type='str'),
             log_dir_path=dict(required=False, type='str'),

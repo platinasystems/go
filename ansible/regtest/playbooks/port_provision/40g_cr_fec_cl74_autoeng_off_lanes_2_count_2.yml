@@ -46,6 +46,7 @@
         media: "copper"
         fec: "cl74"
         two_lanes: True
+        leaf_server: "{{ groups['leaf'][0] }}"
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
         log_dir_path: "{{ port_provision_log_dir }}"
       register: module_out
