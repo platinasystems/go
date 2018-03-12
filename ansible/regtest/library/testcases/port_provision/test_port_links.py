@@ -219,6 +219,7 @@ def verify_port_links(module):
                 cmd = 'ifconfig eth-{}-{} up'.format(eth, port)
                 execute_commands(module, cmd)
 
+        time.sleep(20)
         for eth in eth_list:
             for port in subports:
                 # Verify if port links are up for eth
@@ -249,12 +250,13 @@ def verify_port_links(module):
                 cmd = 'goes hget platina vnet.eth-{}-{}.speed'.format(
                     eth, subport)
                 out = execute_commands(module, cmd)
-                speed = 'auto' if speed == 'auto10g' else speed
-                if out not in speed:
+                check_speed = 'auto' if speed == 'auto10g' else speed
+                if out not in check_speed:
                     RESULT_STATUS = False
                     failure_summary += 'On switch {} '.format(switch_name)
                     failure_summary += 'speed of the interface '
-                    failure_summary += 'is not set to {} for '.format(speed)
+                    failure_summary += 'is not set to {} for '.format(
+                        check_speed)
                     failure_summary += 'the interface eth-{}-{}\n'.format(
                         eth, subport)
 
