@@ -1,5 +1,5 @@
 #!/usr/bin/python
-""" Verify Interfaces On GOES Stop """
+""" Check GOES Health """
 
 #
 # This file is part of Ansible
@@ -26,11 +26,11 @@ from ansible.module_utils.basic import AnsibleModule
 
 DOCUMENTATION = """
 ---
-module: verify_interfaces_on_goes_stop
+module: check_goes_health
 author: Platina Systems
-short_description: Module to verify if interfaces gets removed on goes stop.
+short_description: Module to check health of goes.
 description:
-    Module to verify if interfaces gets removed when we stop goes.
+    Module to check if goes status is ok.
 options:
     switch_name:
       description:
@@ -50,8 +50,8 @@ options:
 """
 
 EXAMPLES = """
-- name: Verify if interfaces are removed on goes stop
-  verify_interfaces_on_goes_stop:
+- name: Check goes health
+  check_goes_health:
     switch_name: "{{ inventory_hostname }}"
     hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
     log_dir_path: "{{ log_dir_path }}"
@@ -71,6 +71,7 @@ log_file_path:
   returned: always
   type: str
 """
+
 
 RESULT_STATUS = True
 HASH_DICT = OrderedDict()
@@ -127,37 +128,18 @@ def main():
 
     global HASH_DICT, RESULT_STATUS
     failure_summary = ''
-    switch_name = module.params['switch_name']
-    eth_list = ['eth-{}-1'.format(i) for i in range(1, 18)]
 
-    # Stop goes
-    execute_commands(module, 'goes stop')
+    # Get the current goes status
+    goes_status = run_cli(module, 'goes status')
 
-    # Check if linux interface are removed
-    cmd = 'ip link show'
-    link_out = execute_commands(module, cmd)
-    for eth in eth_list:
-        if eth in link_out:
-            RESULT_STATUS = False
-            failure_summary += 'On switch {} '.format(switch_name)
-            failure_summary += 'linux interfaces are showing up '
-            failure_summary += 'in output of command {} '.format(cmd)
-            failure_summary += 'even after stopping goes'
-            break
-
-    # Start goes
-    execute_commands(module, 'goes start')
-
-    # Check if linux interface are now showing up
-    cmd = 'ip link show'
-    link_out = execute_commands(module, cmd)
-    for eth in eth_list:
-        if eth not in link_out:
-            RESULT_STATUS = False
-            failure_summary += 'On switch {} '.format(switch_name)
-            failure_summary += 'linux interfaces are not showing up '
-            failure_summary += 'in output of command {} '.format(cmd)
-            failure_summary += 'even after starting goes'
+    # Restart goes if not healthy
+    goes_status = goes_status.lower()
+    if ('not ok' in goes_status or 'check daemons' not in goes_status or
+            'check redis' not in goes_status or
+            'check vnet' not in goes_status):
+        RESULT_STATUS = False
+        failure_summary += 'On switch {} '.format(module.params['switch_name'])
+        failure_summary += 'goes status is not ok'
 
     # Calculate the entire test result
     HASH_DICT['result.status'] = 'Passed' if RESULT_STATUS else 'Failed'
