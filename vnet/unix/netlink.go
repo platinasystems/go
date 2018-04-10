@@ -17,6 +17,7 @@ import (
 
 	"fmt"
 	"sync"
+	"github.com/platinasystems/go/internal/redis"
 )
 
 type msg_counts struct {
@@ -436,6 +437,7 @@ func (ns *net_namespace) validateFibIndexForSi(si vnet.Si, intf *tuntap_interfac
 
 func (e *netlinkEvent) EventAction() {
 	var err error
+	var address string
 	m := e.m
 	vn := m.v
 	known := false
@@ -449,6 +451,16 @@ func (e *netlinkEvent) EventAction() {
 			if err := e.ns.add_del_interface(m, v); err != nil {
 				m.v.Logf("namespace %s, add/del interface %s: %v\n", e.ns, v.Attrs[netlink.IFLA_IFNAME].String(), err)
 				continue
+			}
+		}
+
+		if v, ok := msg.(*netlink.IfAddrMessage); ok {
+			itfname:=v.Attrs[netlink.IFA_LABEL]
+			if v.Type == netlink.RTM_DELADDR{
+				address = v.Attrs[netlink.IFA_ADDRESS].String()
+			}
+			if itfname != nil && itfname.String() == "eth0"{
+				redis.NotifyRedisIfMgtIpChange(itfname.String(),address)
 			}
 		}
 

@@ -31,6 +31,7 @@ import (
 	"github.com/platinasystems/go/internal/redis/rpc/reg"
 	"github.com/platinasystems/go/internal/sockfile"
 	"github.com/platinasystems/go/internal/varrun"
+	"strconv"
 )
 
 const (
@@ -39,6 +40,8 @@ const (
 	RegSock = sockfile.Dir + "/redis-reg"
 	PubSock = sockfile.Dir + "/redis-pub"
 )
+
+var redisServerInstance map[string]*grs.Server
 
 type Command struct {
 	// Machines may restrict redisd listening to this list of net devices.
@@ -412,6 +415,9 @@ func (redisd *Redisd) unassign(key string) error {
 }
 
 func (redisd *Redisd) listen(names ...string) {
+	if redisServerInstance==nil{
+		redisServerInstance=make(map[string]*grs.Server)
+	}
 	for _, name := range names {
 		dev, err := net.InterfaceByName(name)
 		if err != nil {
@@ -461,12 +467,21 @@ func (redisd *Redisd) listen(names ...string) {
 				fmt.Fprint(os.Stderr, id, ": ", err, "\n")
 			} else {
 				srvs = append(srvs, srv)
+				redisServerInstance[srv.Addr]=srv
 				go srv.Start()
 				fmt.Println("listen:", id)
 			}
 		}
 		redisd.devs[name] = srvs
 	}
+}
+
+func (redisd *Redisd) ListenOnNewIP(itfname string,address string) error{
+	redisd.listen(itfname)
+	if v,ok:= redisServerInstance[address+":"+strconv.Itoa(redisd.port)];ok{
+		v.Close()
+	}
+	return nil
 }
 
 func (redisd *Redisd) flushKeyCache() {
