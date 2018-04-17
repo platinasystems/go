@@ -55,6 +55,7 @@
       test_bgp_loop_prevention:
         switch_name: "{{ inventory_hostname }}"
         leaf_list: "{{ groups['leaf'] }}"
+        package_name: "quagga"
         config_file: "{{ lookup('template', '../../files/{{inventory_hostname}}/bgp_peering_loop_prevention.conf') }}"
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
         log_file: "{{ bgp_loop_prevention_log_file }}"
