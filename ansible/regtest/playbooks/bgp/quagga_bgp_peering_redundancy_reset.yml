@@ -14,11 +14,16 @@
         path: "{{ quagga_bgp_conf_file_bck }}"
         state: absent
 
-    - name: Delete static routes
-      add_delete_static_routes:
-        switch_name: "{{ inventory_hostname }}"
-        config_file: "{{ lookup('file', '../../files/{{inventory_hostname}}/static_routes.conf') }}"
-        delete: True
+    - name: Restore backup of /etc/quagga/zebra.conf
+      copy:
+        src: "{{ quagga_zebra_conf_file_bck }}"
+        dest: "{{ quagga_zebra_conf_file }}"
+        remote_src: true
+
+    - name: Remove backup file
+      file:
+        path: "{{ quagga_zebra_conf_file_bck }}"
+        state: absent
 
     - name: Delete dummy interface
       command: "ip link del dummy0 type dummy"
