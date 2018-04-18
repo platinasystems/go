@@ -175,7 +175,7 @@ def verify_bgp_ecmp_load_balancing(module):
                     failure_summary += 'in the output of {}\n'.format(
                         routes_cmd)
 
-            network = '*= 192.168.{}.1'.format(spine_list[0][-2::])
+            network = '192.168.{}.1'.format(spine_list[0][-2::])
             if network not in bgp_out:
                 RESULT_STATUS = False
                 failure_summary += 'On switch {} '.format(switch_name)
