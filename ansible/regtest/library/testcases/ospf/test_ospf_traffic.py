@@ -169,7 +169,7 @@ def verify_ospf_traffic(module):
 
     # Restart and check package status
     execute_commands(module, 'service {} restart'.format(package_name))
-    time.sleep(35)
+    time.sleep(60)
     execute_commands(module, 'service {} status'.format(package_name))
 
     if switch_name in leaf_list:
