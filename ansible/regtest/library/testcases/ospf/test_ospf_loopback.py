@@ -19,6 +19,7 @@
 #
 
 import shlex
+import time
 
 from collections import OrderedDict
 
@@ -118,7 +119,7 @@ def execute_commands(module, cmd):
     """
     global HASH_DICT
 
-    if 'service' in cmd or 'dummy' in cmd or 'restart' in cmd:
+    if 'dummy' in cmd or 'restart' in cmd:
         out = None
     else:
         out = run_cli(module, cmd)
@@ -160,6 +161,8 @@ def verify_ospf_loopback(module):
     execute_commands(module, 'service {} restart'.format(package_name))
     execute_commands(module, 'service {} status'.format(package_name))
 
+    time.sleep(10)
+    
     # Get all ospf routes
     cmd = "vtysh -c 'sh ip ospf route'"
     ospf_out = execute_commands(module, cmd)
