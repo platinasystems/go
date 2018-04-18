@@ -178,7 +178,7 @@ def verify_ospf_intervals(module):
                 failure_summary += 'On switch {} '.format(switch_name)
                 failure_summary += 'hello timer interval is not configured '
                 failure_summary += 'for eth-{}-1 interface\n'.format(eth)
-    
+
             if 'Dead {}'.format(dead_timer) not in out:
                 RESULT_STATUS = False
                 failure_summary += 'On switch {} '.format(switch_name)
@@ -219,7 +219,7 @@ def verify_ospf_intervals(module):
         execute_commands(module, up_cmd)
 
         # Wait for hello time interval
-        time.sleep(int(hello_timer))
+        time.sleep(int(hello_timer) + 2)
 
         # Now, ospf neighbor for this up interface should be displayed
         cmd = "vtysh -c 'sh ip ospf neighbor'"
