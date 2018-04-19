@@ -124,7 +124,7 @@ def execute_commands(module, cmd):
     """
     global HASH_DICT
 
-    if 'service' in cmd or 'dummy' in cmd or 'restart' in cmd:
+    if 'dummy' in cmd or 'restart' in cmd:
         out = None
     else:
         out = run_cli(module, cmd)
