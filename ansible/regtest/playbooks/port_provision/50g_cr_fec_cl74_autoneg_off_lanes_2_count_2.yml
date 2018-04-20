@@ -8,7 +8,7 @@
       register: start_time
 
     - set_fact:
-        hash_name: "port_provision_40g_cr_fec_cl74_autoeng_off_lanes_2_count_2_{{ start_time.stdout }}"
+        hash_name: "port_provision_50g_cr_fec_cl74_autoneg_off_lanes_2_count_2_{{ start_time.stdout }}"
         start_time: "{{ start_time.stdout }}"
 
 
@@ -27,12 +27,12 @@
 
     - name: Copy updated start file for this testcase
       copy:
-        src: ../../templates/40g_cr_fec_cl74_autoeng_off_lanes_2_count_2_start_file
+        src: ../../templates/50g_cr_fec_cl74_autoneg_off_lanes_2_count_2_start_file
         dest: /etc/goes/start
 
     - name: Copy portprovision file for this testcase
       copy:
-        src: ../../templates/40g_cr_lanes_2_count_2_portprovision
+        src: ../../templates/50g_cr_lanes_2_count_2_portprovision
         dest: /etc/goes/portprovision
 
     - name: Restart goes
@@ -42,7 +42,7 @@
       test_port_links:
         switch_name: "{{ inventory_hostname }}"
         eth_list: "1,3,5,7,9,11,13,15"
-        speed: "40g"
+        speed: "50g"
         media: "copper"
         fec: "cl74"
         two_lanes: True

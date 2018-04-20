@@ -8,7 +8,7 @@
       register: start_time
 
     - set_fact:
-        hash_name: "port_provision_10g_cr_fec_cl74_autoeng_off_lanes_1_count_4_{{ start_time.stdout }}"
+        hash_name: "port_provision_10g_cr_fec_cl74_autoneg_off_lanes_1_count_4_{{ start_time.stdout }}"
         start_time: "{{ start_time.stdout }}"
 
 
@@ -27,7 +27,7 @@
 
     - name: Copy updated start file for this testcase
       copy:
-        src: ../../templates/10g_cr_fec_cl74_autoeng_off_lanes_1_count_4_start_file
+        src: ../../templates/10g_cr_fec_cl74_autoneg_off_lanes_1_count_4_start_file
         dest: /etc/goes/start
 
     - name: Copy portprovision file for this testcase

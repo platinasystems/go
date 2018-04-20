@@ -8,7 +8,7 @@
       register: start_time
 
     - set_fact:
-        hash_name: "port_provision_40g_cr_fec_cl74_autoeng_on_lanes_4_count_1_{{ start_time.stdout }}"
+        hash_name: "port_provision_10g_cr_fec_none_autoneg_off_lanes_1_count_4_{{ start_time.stdout }}"
         start_time: "{{ start_time.stdout }}"
 
 
@@ -27,12 +27,12 @@
 
     - name: Copy updated start file for this testcase
       copy:
-        src: ../../templates/40g_cr_fec_cl74_autoeng_on_lanes_4_count_1_start_file
+        src: ../../templates/10g_cr_fec_none_autoneg_off_lanes_1_count_4_start_file
         dest: /etc/goes/start
 
     - name: Copy portprovision file for this testcase
       copy:
-        src: ../../templates/40g_cr_lanes_4_count_1_portprovision
+        src: ../../templates/10g_cr_lanes_1_count_4_portprovision
         dest: /etc/goes/portprovision
 
     - name: Restart goes
@@ -42,9 +42,10 @@
       test_port_links:
         switch_name: "{{ inventory_hostname }}"
         eth_list: "1,3,5,7,9,11,13,15"
-        speed: "auto"
+        speed: "10g"
         media: "copper"
-        fec: "cl74"
+        fec: "none"
+        leaf_server: "{{ groups['leaf'][0] }}"
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
         log_dir_path: "{{ port_provision_log_dir }}"
       register: module_out
@@ -73,15 +74,14 @@
         mode: 0755
 
     - name: Start iperf server instances
-      shell: "~/iperf-parallel-servers.sh 8 server-report"
+      shell: "~/iperf-parallel-servers.sh 35 server-report"
 
     - name: Initiate iperf client and verify traffic
       verify_iperf_traffic:
         switch_name: "{{ inventory_hostname }}"
         leaf_server: "{{ groups['leaf'][0] }}"
-        leaf_eth1_ip: "10.0.1.29"
-        spine_eth1_ip: "10.0.1.31"
         eth_list: "1,3,5,7,9,11,13,15"
+        is_subports: True
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
         log_dir_path: "{{ port_provision_log_dir }}"
       register: module_out

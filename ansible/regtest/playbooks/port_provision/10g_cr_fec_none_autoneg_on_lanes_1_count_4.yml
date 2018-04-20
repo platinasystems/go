@@ -8,7 +8,7 @@
       register: start_time
 
     - set_fact:
-        hash_name: "port_provision_10g_cr_fec_none_autoeng_off_lanes_1_count_4_{{ start_time.stdout }}"
+        hash_name: "port_provision_10g_cr_fec_none_autoneg_on_lanes_1_count_4_{{ start_time.stdout }}"
         start_time: "{{ start_time.stdout }}"
 
 
@@ -21,13 +21,13 @@
 
     - name: Take backup of /etc/goes/start file
       copy:
-        src: "{{ goes_start_file }}"
-        dest: "{{ goes_start_file_bck }}"
+        src:  "{{ goes_start_file }}"
+        dest:  "{{ goes_start_file_bck }}"
         remote_src: true
 
     - name: Copy updated start file for this testcase
       copy:
-        src: ../../templates/10g_cr_fec_none_autoeng_off_lanes_1_count_4_start_file
+        src: ../../templates/10g_cr_fec_none_autoneg_on_lanes_1_count_4_start_file
         dest: /etc/goes/start
 
     - name: Copy portprovision file for this testcase
@@ -42,7 +42,7 @@
       test_port_links:
         switch_name: "{{ inventory_hostname }}"
         eth_list: "1,3,5,7,9,11,13,15"
-        speed: "10g"
+        speed: "auto10g"
         media: "copper"
         fec: "none"
         leaf_server: "{{ groups['leaf'][0] }}"

@@ -21,7 +21,7 @@
 
     - name: Copy portprovision file for this testcase
       copy:
-        src: ../../templates/25g_cr_autoeng_off_portprovision
+        src: ../../templates/25g_cr_autoneg_off_portprovision
         dest: /etc/goes/portprovision
 
     - name: Restart goes and check its status
