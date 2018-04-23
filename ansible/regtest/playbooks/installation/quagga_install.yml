@@ -1,6 +1,7 @@
 ---
  - hosts: leaf:spine
    become: true
+   ignore_errors: true
    tasks:
     - name: Quagga Installation
       apt: name=quagga
