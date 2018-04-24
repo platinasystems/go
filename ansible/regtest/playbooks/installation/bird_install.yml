@@ -13,3 +13,4 @@
        apt:
          name: bird
          update_cache: yes
+         allow_unauthenticated: yes
