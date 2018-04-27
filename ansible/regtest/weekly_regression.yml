@@ -1,0 +1,40 @@
+---
+
+# Reset invaders to default state
+- include: playbooks/reset_invaders_to_default.yml
+
+
+# Upgrade invaders to latest goes from /home/mpleso/platinabot
+- include: playbooks/upgrade_invaders_to_latest_goes.yml
+
+
+# Run all quagga test cases
+- include: quagga_main.yml
+
+
+# Run all frr test cases
+- include: frr_main.yml
+
+
+# Run all gobgp test cases
+- include: gobgp_main.yml
+
+
+# Run all bird test cases
+- include: quagga_main.yml
+
+
+# Run all bird test cases
+- include: bird_main.yml
+
+
+# Run all port provision test cases
+- include: port_provision_main.yml
+
+
+# Run all docker test cases
+- include: docker_main.yml
+
+
+# Run all vlan test cases
+- include: vlan_main.yml

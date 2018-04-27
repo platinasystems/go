@@ -12,7 +12,7 @@
 - include: playbooks/goes_restart.yml
 
 
-# Run all quagga bgp playbooks
+# Run all quagga bgp test cases
 - include: playbooks/bgp/quagga_bgp_peering_ebgp.yml
 
 - include: playbooks/bgp/quagga_bgp_peering_ebgp_loopback.yml
@@ -39,7 +39,7 @@
 
 - include: playbooks/bgp/quagga_bgp_peering_route_reflector.yml
 
-- include: playbooks/bgp/quagga_bgp_peering_redundancy.yml
+#- include: playbooks/bgp/quagga_bgp_peering_redundancy.yml
 
 - include: playbooks/bgp/quagga_bgp_peering_consistency.yml
 
@@ -56,7 +56,7 @@
 - include: playbooks/bgp/quagga_bgp_traffic_test.yml
 
 
-# Run all quagga ospf playbooks
+# Run all quagga ospf test cases
 - include: playbooks/ospf/quagga_ospf_basic.yml
 
 - include: playbooks/ospf/quagga_ospf_loopback.yml
@@ -76,7 +76,13 @@
 - include: playbooks/ospf/quagga_ospf_traffic.yml
 
 
-# Run all quagga isis playbooks
+# Run all quagga isis test cases
 - include: playbooks/isis/quagga_isis_basic.yml
 
 - include: playbooks/isis/quagga_isis_neighbors.yml
+
+
+# Run all quagga ipv4 test cases
+- include: playbooks/ipv4/quagga_ipv4_configuration_interfaces.yml
+
+- include: playbooks/ipv4/quagga_ipv4_route_scale.yml

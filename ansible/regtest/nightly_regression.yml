@@ -20,7 +20,7 @@
 - include: playbooks/goes_restart.yml
 
 
-# Run few quagga bgp playbooks
+# Run few quagga bgp test cases
 - include: playbooks/bgp/quagga_bgp_peering_ebgp.yml
 
 - include: playbooks/bgp/quagga_bgp_peering_ibgp_loopback.yml
@@ -34,7 +34,7 @@
 - include: playbooks/bgp/quagga_bgp_traffic_test.yml
 
 
-# Run few quagga ospf playbooks
+# Run few quagga ospf test cases
 - include: playbooks/ospf/quagga_ospf_basic.yml
 
 - include: playbooks/ospf/quagga_ospf_loopback.yml
@@ -42,7 +42,7 @@
 - include: playbooks/ospf/quagga_ospf_administrative_distance.yml
 
 
-# Run all quagga isis playbooks
+# Run all quagga isis test cases
 - include: playbooks/isis/quagga_isis_basic.yml
 
 - include: playbooks/isis/quagga_isis_neighbors.yml
