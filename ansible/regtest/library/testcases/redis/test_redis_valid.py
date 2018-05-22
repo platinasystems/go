@@ -58,6 +58,11 @@ options:
         - Path to log directory where logs will be stored.
       required: False
       type: str
+    platina_redis_channel:
+      description:
+        - Name of the platina redis channel.
+      required: False
+      type: str
 """
 
 EXAMPLES = """
@@ -65,6 +70,7 @@ EXAMPLES = """
   test_redis_valid:
     switch_name: "{{ inventory_hostname }}"
     switch_ip: "{{ ansible_ssh_host }}"
+    platina_redis_channel: "platina-mk1"
 """
 
 RETURN = """
@@ -123,7 +129,8 @@ def execute_and_verify(module, operation, param, set_value):
     failure_summary = ''
     switch_name = module.params['switch_name']
 
-    cmd = '{} platina {} '.format(operation, param)
+    cmd = '{} {} {} '.format(operation,
+                             module.params['platina_redis_channel'], param)
 
     if operation == 'hset':
         cmd += '{}'.format(set_value)
@@ -201,6 +208,7 @@ def main():
             switch_name=dict(required=False, type='str'),
             switch_ip=dict(required=False, type='str'),
             remote_access=dict(required=False, type='bool', default=False),
+            platina_redis_channel=dict(required=False, type='str'),
             hash_name=dict(required=False, type='str'),
             log_dir_path=dict(required=False, type='str'),
         )

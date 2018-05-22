@@ -1,5 +1,6 @@
 ---
 reset_config: True
+platina_redis_channel: platina-mk1
 
 bgp_log_dir: /var/log/regression/bgp
 ospf_log_dir: /var/log/regression/ospf

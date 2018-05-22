@@ -75,6 +75,11 @@ options:
         - Path to log directory where logs will be stored.
       required: False
       type: str
+    platina_redis_channel:
+      description:
+        - Name of the platina redis channel.
+      required: False
+      type: str
 """
 
 EXAMPLES = """
@@ -85,6 +90,7 @@ EXAMPLES = """
     speed: "100g"
     media: "copper"
     fec: "none"
+    platina_redis_channel: "platina-mk1"
     hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
     log_dir_path: "{{ port_provision_log_dir }}"
 """
@@ -150,6 +156,7 @@ def verify_single_port_provisioning(module):
     speed = module.params['speed']
     media = module.params['media']
     fec = module.params['fec']
+    platina_redis_channel = module.params['platina_redis_channel']
     verify_links = module.params['verify_links']
     eth = module.params['eth']
 
@@ -158,7 +165,9 @@ def verify_single_port_provisioning(module):
     if speed == '100g':
         if verify_links:
             # Verify if port links are up for eth
-            cmd = 'goes hget platina vnet.eth-{}-1.link'.format(eth)
+            cmd = 'goes hget {} vnet.eth-{}-1.link'.format(
+                platina_redis_channel, eth
+            )
             link_out = execute_commands(module, cmd)
             if 'true' not in link_out:
                 RESULT_STATUS = False
@@ -167,7 +176,7 @@ def verify_single_port_provisioning(module):
                 failure_summary += 'eth-{}-1 interface\n'.format(eth)
         else:
             # Verify optic media
-            cmd = 'goes hget platina qsfp.compliance'
+            cmd = 'goes hget {} qsfp.compliance'.format(platina_redis_channel)
             optic_out = execute_commands(module, cmd)
 
             verify_str = 'port-{}.qsfp.compliance: extended '.format(eth)
@@ -183,7 +192,9 @@ def verify_single_port_provisioning(module):
                 failure_summary += 'have correct optic installed\n'
 
             # Verify fec is set to correct value
-            cmd = 'goes hget platina vnet.eth-{}-1.fec'.format(eth)
+            cmd = 'goes hget {} vnet.eth-{}-1.fec'.format(
+                platina_redis_channel, eth
+            )
             fec_out = execute_commands(module, cmd)
 
             if fec not in fec_out:
@@ -193,7 +204,9 @@ def verify_single_port_provisioning(module):
                 failure_summary += 'for eth-{}-1 interface\n'.format(eth)
 
             # Verify speed of interfaces are set to correct value
-            cmd = 'goes hget platina vnet.eth-{}-1.speed'.format(eth)
+            cmd = 'goes hget {} vnet.eth-{}-1.speed'.format(
+                platina_redis_channel, eth
+            )
             speed_out = execute_commands(module, cmd)
             if speed not in speed_out:
                 RESULT_STATUS = False
@@ -220,6 +233,7 @@ def main():
             speed=dict(required=False, type='str'),
             media=dict(required=False, type='str'),
             fec=dict(required=False, type='str', default=''),
+            platina_redis_channel=dict(required=False, type='str'),
             verify_links=dict(required=False, type='bool', default=False),
             hash_name=dict(required=False, type='str'),
             log_dir_path=dict(required=False, type='str'),

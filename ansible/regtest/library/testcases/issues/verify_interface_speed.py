@@ -52,6 +52,11 @@ options:
         - Path to log directory where logs will be stored.
       required: False
       type: str
+    platina_redis_channel:
+      description:
+        - Name of the platina redis channel.
+      required: False
+      type: str
 """
 
 EXAMPLES = """
@@ -59,6 +64,7 @@ EXAMPLES = """
   verify_interface_speed:
     switch_name: "{{ inventory_hostname }}"
     start_file: "{{ lookup('file', '../../templates/issue_10_start_file') }}"
+    platina_redis_channel: "platina-mk1"
     hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
     log_dir_path: "{{ log_dir_path }}"
 """
@@ -131,6 +137,7 @@ def main():
         argument_spec=dict(
             switch_name=dict(required=False, type='str'),
             start_file=dict(required=False, type='str'),
+            platina_redis_channel=dict(required=False, type='str'),
             hash_name=dict(required=False, type='str'),
             log_dir_path=dict(required=False, type='str'),
         )
@@ -139,17 +146,20 @@ def main():
     global HASH_DICT, RESULT_STATUS
     failure_summary = ''
     switch_name = module.params['switch_name']
+    platina_redis_channel = module.params['platina_redis_channel']
     start_file = module.params['start_file'].splitlines()
 
     # Get speed values of interfaces from redis
-    redis_speed = execute_commands(module, 'goes hget platina speed')
+    redis_speed = execute_commands(module, 'goes hget {} speed'.format(
+        platina_redis_channel
+    ))
 
     # Get speed values of interfaces from start file
     for line in start_file:
         line = line.strip()
         if 'speed' in line:
             speed = line.split('speed ')[1]
-            eth = line.split('platina ')[1].split()[0]
+            eth = line.split('{} '.format(platina_redis_channel))[1].split()[0]
 
             speed = 'autoneg' if speed == 'auto' else speed
             interface_speed = '{}: {}'.format(eth, speed)

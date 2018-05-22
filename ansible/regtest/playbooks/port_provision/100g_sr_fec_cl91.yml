@@ -26,7 +26,7 @@
         remote_src: true
 
     - name: Copy updated start file for this testcase
-      copy:
+      template:
         src: ../../templates/100g_sr_fec_cl91_start_file
         dest: /etc/goes/start
 
@@ -41,6 +41,7 @@
         media: "SR4"
         fec: "cl91"
         verify_links: False
+        platina_redis_channel: "{{ platina_redis_channel }}"
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
         log_dir_path: "{{ port_provision_log_dir }}"
       register: module_out
@@ -105,6 +106,7 @@
         switch_name: "{{ inventory_hostname }}"
         eth: "32"
         verify_links: True
+        platina_redis_channel: "{{ platina_redis_channel }}"
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
         log_dir_path: "{{ port_provision_log_dir }}"
       register: module_out

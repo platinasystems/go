@@ -22,6 +22,7 @@
     - name: Change the interface speed to auto and verify link status after goes restart
       verify_ports:
         switch_name: "{{ inventory_hostname }}"
+        platina_redis_channel: "{{ platina_redis_channel }}"
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
         log_dir_path: "{{ issues_log_dir }}"
       register: module_out

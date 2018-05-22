@@ -58,12 +58,18 @@ options:
         - Path to log directory where logs will be stored.
       required: False
       type: str
+    platina_redis_channel:
+      description:
+        - Name of the platina redis channel.
+      required: False
+      type: str
 """
 
 EXAMPLES = """
 - name: Test Redis db with invalid values
-  test_redis_valid:
+  test_redis_invalid:
     switch_name: "{{ inventory_hostname }}"
+    platina_redis_channel: "platina-mk1"
 """
 
 RETURN = """
@@ -122,7 +128,8 @@ def execute_and_verify(module, operation, param, set_value):
     failure_summary = ''
     switch_name = module.params['switch_name']
 
-    cmd = '{} platina {} '.format(operation, param)
+    cmd = '{} {} {} '.format(operation,
+                             module.params['platina_redis_channel'], param)
 
     if operation == 'hset':
         cmd += '{}'.format(set_value)
@@ -147,7 +154,7 @@ def execute_and_verify(module, operation, param, set_value):
         RESULT_STATUS = False
         failure_summary += 'On switch {} '.format(switch_name)
         failure_summary += 'command {} should not have executed\n'.format(cli)
-        
+
     return failure_summary
 
 
@@ -181,16 +188,17 @@ def main():
             switch_name=dict(required=False, type='str'),
             switch_ip=dict(required=False, type='str'),
             remote_access=dict(required=False, type='bool', default=False),
+            platina_redis_channel=dict(required=False, type='str'),
             hash_name=dict(required=False, type='str'),
             log_dir_path=dict(required=False, type='str'),
         )
     )
 
     global RESULT_STATUS, HASH_DICT
-    
+
     # Perform and verify all required tests
     test_hset_operations_with_invalid_input(module)
-    
+
     # Calculate the entire test result
     HASH_DICT['result.status'] = 'Passed' if RESULT_STATUS else 'Failed'
 

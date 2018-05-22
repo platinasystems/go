@@ -59,6 +59,7 @@
       verify_interface_speed:
         switch_name: "{{ inventory_hostname }}"
         start_file: "{{ lookup('file', '../../templates/issue_10_start_file') }}"
+        platina_redis_channel: "{{ platina_redis_channel }}"
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
         log_dir_path: "{{ issues_log_dir }}"
       register: module_out

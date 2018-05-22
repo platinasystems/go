@@ -18,7 +18,7 @@
         dest: "{{ network_interfaces_file }}"
 
     - name: Copy default goes start file
-      copy:
+      template:
         src: "../files/{{inventory_hostname}}/start_file"
         dest: "{{ goes_start_file }}"
 

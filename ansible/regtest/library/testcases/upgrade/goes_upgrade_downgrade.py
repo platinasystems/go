@@ -72,12 +72,18 @@ options:
         - Path to log directory where logs will be stored.
       required: False
       type: str
+    platina_redis_channel:
+      description:
+        - Name of the platina redis channel.
+      required: False
+      type: str
 """
 
 EXAMPLES = """
 - name: Upgrade and downgrade goes
   goes_upgrade_downgrade:
     switch_name: "{{ inventory_hostname }}"
+    platina_redis_channel: "platina-mk1"
     hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
     log_dir_path: "{{ log_dir_path }}"
 """
@@ -208,7 +214,8 @@ def get_current_goes_version(module):
     :param module: The Ansible module to fetch input parameters.
     :return: Current goes version.
     """
-    return execute_commands(module, 'goes hget platina packages')
+    return execute_commands(module, 'goes hget {} packages'.format(
+        module.params['platina_redis_channel']))
 
 
 def main():
@@ -221,6 +228,7 @@ def main():
             downgrade_installer_name=dict(required=False, type='str'),
             upgrade_version=dict(required=False, type='str'),
             downgrade_version=dict(required=False, type='str'),
+            platina_redis_channel=dict(required=False, type='str'),
             hash_name=dict(required=False, type='str'),
             log_dir_path=dict(required=False, type='str'),
         )
@@ -296,4 +304,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 

@@ -43,6 +43,7 @@
         downgrade_installer_name: "{{ goes_downgrade_installer_name }}"
         upgrade_version: "{{ lookup('file', '../../files/upgrade_version') }}"
         downgrade_version: "{{ lookup('file', '../../files/downgrade_version') }}"
+        platina_redis_channel: "{{ platina_redis_channel }}"
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
         log_dir_path: "{{ upgrade_log_dir }}"
       register: module_out

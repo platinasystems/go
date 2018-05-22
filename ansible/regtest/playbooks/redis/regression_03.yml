@@ -22,6 +22,7 @@
     - name: Test hget/hset operations with valid values on redis db locally
       test_redis_valid:
         switch_name: "{{ inventory_hostname }}"
+        platina_redis_channel: "{{ platina_redis_channel }}"
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
         log_dir_path: "{{ redis_log_dir }}"
       register: module_out
@@ -48,6 +49,7 @@
         switch_name: "{{ inventory_hostname }}"
         switch_ip: "{{ ansible_ssh_host }}"
         remote_access: true
+        platina_redis_channel: "{{ platina_redis_channel }}"
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
         log_dir_path: "{{ redis_log_dir }}"
       delegate_to: 127.0.0.1

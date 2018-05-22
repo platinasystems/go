@@ -47,12 +47,18 @@ options:
         - Path to log directory where logs will be stored.
       required: False
       type: str
+    platina_redis_channel:
+      description:
+        - Name of the platina redis channel.
+      required: False
+      type: str
 """
 
 EXAMPLES = """
 - name: Verify port link status
   verify_ports:
     switch_name: "{{ inventory_hostname }}"
+    platina_redis_channel: "platina-mk1"
     hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
     log_dir_path: "{{ log_dir_path }}"
 """
@@ -128,14 +134,15 @@ def change_speed_and_verify_links(module, speed):
     global HASH_DICT, RESULT_STATUS
     failure_summary = ''
     switch_name = module.params['switch_name']
+    platina_redis_channel = module.params['platina_redis_channel']
     eth_list = [1, 5, 9, 13, 17, 21, 25, 29]
 
     # Bring down interface and update the speed to auto
     for eth in eth_list:
         eth = 'eth-{}-1'.format(eth)
         execute_commands(module, 'ifdown {}'.format(eth))
-        execute_commands(module, 'goes hset platina vnet.{}.speed {}'.format(
-            eth, speed))
+        execute_commands(module, 'goes hset {} vnet.{}.speed {}'.format(
+            platina_redis_channel, eth, speed))
         execute_commands(module, 'ifup {}'.format(eth))
 
     # Restart goes
@@ -144,7 +151,7 @@ def change_speed_and_verify_links(module, speed):
     # Check the port link status, it should be true
     for eth in eth_list:
         eth = 'eth-{}-1'.format(eth)
-        cmd = 'goes hget platina vnet.{}.link'.format(eth)
+        cmd = 'goes hget {} vnet.{}.link'.format(platina_redis_channel, eth)
         link_out = execute_commands(module, cmd)
         if 'true' not in link_out:
             RESULT_STATUS = False
@@ -162,6 +169,7 @@ def main():
         argument_spec=dict(
             switch_name=dict(required=False, type='str'),
             hash_name=dict(required=False, type='str'),
+            platina_redis_channel=dict(required=False, type='str'),
             log_dir_path=dict(required=False, type='str'),
         )
     )

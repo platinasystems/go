@@ -53,6 +53,11 @@ options:
         - Path to log directory where logs will be stored.
       required: False
       type: str
+    platina_redis_channel:
+      description:
+        - Name of the platina redis channel.
+      required: False
+      type: str
 """
 
 EXAMPLES = """
@@ -60,6 +65,7 @@ EXAMPLES = """
   test_bmc_redis:
     switch_name: "{{ inventory_hostname }}"
     bmc_redis_ip: "{{ ansible_ssh_host }}"
+    platina_redis_channel: "platina-mk1"
     log_dir_path: "{{ log_dir_path }}"
 """
 
@@ -109,7 +115,8 @@ def get_ipv6_address(module):
     :return: IPV6 local address as string
     """
     cli = get_cli(module)
-    cli += 'hget platina eeprom.BaseEthernetAddress'
+    cli += 'hget {} eeprom.BaseEthernetAddress'.format(
+        module.params['platina_redis_channel'])
     mac = run_cli(module, cli)
 
     parts = mac.split(":")
@@ -136,8 +143,9 @@ def execute_and_verify(module, operation, param):
     global HASH_DICT, RESULT_STATUS
     failure_summary = ''
     switch_name = module.params['switch_name']
-
-    cmd = '{} platina {} '.format(operation, param)
+    
+    cmd = '{} {} {} '.format(operation, 
+                             module.params['platina_redis_channel'], param)
 
     cli = get_cli(module) + cmd
     out = run_cli(module, cli)
@@ -196,6 +204,7 @@ def main():
         argument_spec=dict(
             switch_name=dict(required=False, type='str'),
             bmc_redis_ip=dict(required=False, type='str'),
+            platina_redis_channel=dict(required=False, type='str'),
             hash_name=dict(required=False, type='str'),
             log_dir_path=dict(required=False, type='str'),
         )

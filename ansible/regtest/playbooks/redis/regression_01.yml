@@ -23,6 +23,7 @@
       test_bmc_redis:
         switch_name: "{{ inventory_hostname }}"
         bmc_redis_ip: "{{ bmc_redis_ip }}"
+        platina_redis_channel: "{{ platina_redis_channel }}"
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
         log_dir_path: "{{ redis_log_dir }}"
       register: module_out

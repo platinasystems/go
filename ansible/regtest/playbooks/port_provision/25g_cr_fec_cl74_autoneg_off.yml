@@ -26,7 +26,7 @@
         remote_src: true
 
     - name: Copy updated start file for this testcase
-      copy:
+      template:
         src: ../../templates/25g_cr_fec_cl74_autoneg_off_start_file
         dest: /etc/goes/start
 
@@ -45,6 +45,7 @@
         speed: "25g"
         media: "copper"
         fec: "cl74"
+        platina_redis_channel: "{{ platina_redis_channel }}"
         leaf_server: "{{ groups['leaf'][0] }}"
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
         log_dir_path: "{{ port_provision_log_dir }}"
