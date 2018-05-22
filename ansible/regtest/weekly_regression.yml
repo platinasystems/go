@@ -21,10 +21,6 @@
 
 
 # Run all bird test cases
-- include: quagga_main.yml
-
-
-# Run all bird test cases
 - include: bird_main.yml
 
 
