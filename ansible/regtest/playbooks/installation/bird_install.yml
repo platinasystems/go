@@ -1,7 +1,7 @@
 ---
  - hosts: leaf:spine
    become: true
-
+   ignore_errors: yes
    tasks:
      - name: Add Bird package in repository config file
        lineinfile:

@@ -2,6 +2,7 @@
 
 - hosts: leaf:spine
   become: true
+  ignore_errors: yes
   tasks:
    - name: Download FRR debian package file
      get_url:
