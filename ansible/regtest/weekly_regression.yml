@@ -1,11 +1,11 @@
 ---
 
-# Reset invaders to default state
-- include: playbooks/reset_invaders_to_default.yml
-
-
 # Upgrade invaders to latest goes from /home/mpleso/platinabot
 - include: playbooks/upgrade_invaders_to_latest_goes.yml
+
+
+# Reset invaders to default state
+- include: playbooks/reset_invaders_to_default.yml
 
 
 # Run all quagga test cases

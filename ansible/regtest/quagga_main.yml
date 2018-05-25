@@ -47,7 +47,7 @@
 
 - include: playbooks/bgp/quagga_bgp_peering_loop_prevention.yml
 
-- include: playbooks/bgp/quagga_bgp_state_propagation.yml
+#- include: playbooks/bgp/quagga_bgp_state_propagation.yml
 
 - include: playbooks/bgp/quagga_bgp_ecmp_loadbalancing_paths.yml
 
