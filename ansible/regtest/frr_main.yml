@@ -45,7 +45,7 @@
 
 - include: playbooks/bgp/frr_bgp_peering_if_down.yml
 
-- include: playbooks/bgp/frr_bgp_peering_loop_prevention.yml
+#- include: playbooks/bgp/frr_bgp_peering_loop_prevention.yml
 
 - include: playbooks/bgp/frr_bgp_state_propagation.yml
 
@@ -65,7 +65,7 @@
 
 - include: playbooks/ospf/frr_ospf_loadbalancing.yml
 
-- include: playbooks/ospf/frr_ospf_hello_and_dead_timers.yml
+#- include: playbooks/ospf/frr_ospf_hello_and_dead_timers.yml
 
 - include: playbooks/ospf/frr_ospf_routes.yml
 
@@ -79,6 +79,6 @@
 
 
 # Run all frr ipv4 test cases
-- include: playbooks/ipv4/frr_ipv4_configuration_interfaces.yml
+#- include: playbooks/ipv4/frr_ipv4_configuration_interfaces.yml
 
-- include: playbooks/ipv4/frr_ipv4_route_scale.yml
+#- include: playbooks/ipv4/frr_ipv4_route_scale.yml

@@ -57,7 +57,7 @@
 
 - include: playbooks/ospf/bird_ospf_loadbalancing.yml
 
-- include: playbooks/ospf/bird_ospf_hello_and_dead_timers.yml
+#- include: playbooks/ospf/bird_ospf_hello_and_dead_timers.yml
 
 - include: playbooks/ospf/bird_ospf_routes.yml
 

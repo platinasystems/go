@@ -15,6 +15,6 @@
 # Run all docker containerized test cases
 - include: playbooks/docker/quagga_ospf_traffic.yml
 
-- include: playbooks/docker/quagga_ospf_traffic_subports.yml
+#- include: playbooks/docker/quagga_ospf_traffic_subports.yml
 
 - include: playbooks/docker/quagga_ospf_traffic_vlan.yml
