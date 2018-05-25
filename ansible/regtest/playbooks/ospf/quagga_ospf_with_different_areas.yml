@@ -38,7 +38,7 @@
 
     - name: Wait few seconds for ospf to establish connection
       pause:
-        seconds: 50
+        seconds: 55
 
     - file:
         path: "{{ ospf_log_dir }}"
