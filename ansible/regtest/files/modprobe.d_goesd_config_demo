@@ -1,0 +1,8 @@
+# goesd-mk1-options.conf: kernel modules to load require parameters at boot time.
+#
+# This file contains the names of the modules that must be configured at boot time,
+# one per line. Lines beginning with "#" are ignored.
+#
+# - i2c-i801 with irq disabled (polling mode)
+#
+options i2c_i801 disable_features=0x10

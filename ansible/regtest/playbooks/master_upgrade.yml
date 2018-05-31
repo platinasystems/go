@@ -1,0 +1,72 @@
+---
+
+- hosts: leaf:spine
+  become: true
+
+  vars:
+  - eth: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
+
+  tasks:
+    - name: Remove existing boot files
+      command: rm -rf /boot/*platina*
+
+    - name: Write modules to /etc/modules-load.d/goesd-platina-mk1-modules.conf
+      copy:
+        src: ../files/modules-load.d_goesd_conf_master
+        dest: /etc/modules-load.d/goesd-platina-mk1-modules.conf
+
+    - name: Write modules to /etc/modprobe.d/goesd-platina-mk1-modprobe.conf
+      copy:
+        src: ../files/modprobe.d_goesd_config_master
+        dest: /etc/modprobe.d/goesd-platina-mk1-modprobe.conf
+
+    - name: Remove /etc/modprobe.d/blacklist
+      file:
+        path: /etc/modprobe.d/blacklist
+        state: absent
+
+    - name: Remove /etc/modprobe.d/blacklist.conf
+      file:
+        path: /etc/modprobe.d/blacklist.conf
+        state: absent
+
+    - name: Update grub
+      command: update-grub
+
+    - command: sed -i '/allow-vnet eth-{{ item }}-1/a auto eth-{{ item }}-1' /etc/network/interfaces
+      with_items:
+      - "{{ eth }}"
+
+    - command: sed -i '/allow-vnet eth-{{ item }}-2/a auto eth-{{ item }}-2' /etc/network/interfaces
+      with_items:
+      - "{{ eth }}"
+
+    - command: sed -i '/allow-vnet eth-{{ item }}-3/a auto eth-{{ item }}-3' /etc/network/interfaces
+      with_items:
+      - "{{ eth }}"
+
+    - command: sed -i '/allow-vnet eth-{{ item }}-4/a auto eth-{{ item }}-4' /etc/network/interfaces
+      with_items:
+      - "{{ eth }}"
+
+    - command: sed -i '/iface eth-{{ item }}-1 inet .\+/a pre-up ip link add \$IFACE type platina-mk1' /etc/network/interfaces
+      with_items:
+      - "{{ eth }}"
+
+    - command: sed -i '/iface eth-{{ item }}-2 inet .\+/a pre-up ip link add \$IFACE type platina-mk1' /etc/network/interfaces
+      with_items:
+      - "{{ eth }}"
+
+    - command: sed -i '/iface eth-{{ item }}-3 inet .\+/a pre-up ip link add \$IFACE type platina-mk1' /etc/network/interfaces
+      with_items:
+      - "{{ eth }}"
+
+    - command: sed -i '/iface eth-{{ item }}-4 inet .\+/a pre-up ip link add \$IFACE type platina-mk1' /etc/network/interfaces
+      with_items:
+      - "{{ eth }}"
+
+    - name: Upgrade kernel to master
+      shell: goes upgrade -k -v test/master
+
+    - name: Upgrade goes to master
+      shell: goes upgrade -g -v test/master

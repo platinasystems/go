@@ -1,0 +1,35 @@
+---
+
+- hosts: leaf:spine
+  become: true
+  tasks:
+    - name: Remove existing boot files
+      command: rm -rf /boot/*platina*
+
+    - name:  Write modules to /etc/modules-load.d/goesd-platina-mk1-modules.conf
+      copy:
+        src: ../files/modules-load.d_goesd_conf_demo
+        dest: /etc/modules-load.d/goesd-platina-mk1-modules.conf
+
+    - name: Write modules to /etc/modprobe.d/goesd-platina-mk1-modprobe.conf
+      copy:
+        src: ../files/modprobe.d_goesd_config_demo
+        dest: /etc/modprobe.d/goesd-platina-mk1-modprobe.conf
+
+    - name: Copy /etc/modprobe.d/blacklist
+      copy:
+        src: ../files/modprobe.d_blacklist-blacklist_conf
+        dest: /etc/modprobe.d/blacklist.conf
+
+    - name: Update grub
+      command: update-grub
+
+    - command: sed -i '/auto eth-[0-9]\+-[0-9]\+/d' /etc/network/interfaces
+
+    - command: sed -i '/pre-up ip link add \$IFACE type platina-mk1/d' /etc/network/interfaces
+
+    - name: Upgrade kernel to demo
+      shell: goes upgrade -k -v test/demo
+
+    - name: Upgrade goes to demo
+      shell: goes upgrade -g -v test/demo
