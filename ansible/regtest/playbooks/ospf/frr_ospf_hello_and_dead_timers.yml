@@ -65,6 +65,7 @@
     - name: Verify frr ospf hello and dead time intervals
       test_ospf_intervals:
         switch_name: "{{ inventory_hostname }}"
+        interval_switch: "{{ groups['leaf'][1] }}"
         eth_list: "7,17"
         hello_timer: "5"
         dead_timer: "10"

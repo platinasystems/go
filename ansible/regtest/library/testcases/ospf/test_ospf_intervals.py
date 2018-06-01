@@ -38,6 +38,11 @@ options:
         - Name of the switch on which tests will be performed.
       required: False
       type: str
+    interval_switch:
+      description:
+        - Name of the switch on which interfaces need to be tested.
+      required: False
+      type: str
     eth_list:
       description:
         - Comma separated string of eth interfaces to bring down/up.
@@ -139,6 +144,7 @@ def verify_ospf_intervals(module):
     global RESULT_STATUS, HASH_DICT
     failure_summary = ''
     switch_name = module.params['switch_name']
+    interval_switch = module.params['interval_switch']
     package_name = module.params['package_name']
     hello_timer = module.params['hello_timer']
     dead_timer = module.params['dead_timer']
@@ -150,6 +156,9 @@ def verify_ospf_intervals(module):
     # Restart and check package status
     execute_commands(module, 'service {} restart'.format(package_name))
     execute_commands(module, 'service {} status'.format(package_name))
+
+    for eth in eth_list:
+        execute_commands(module, 'ifconfig eth-{}-1 up'.format(eth))
 
     # Get and verify ospf neighbor relationships
     cmd = "vtysh -c 'sh ip ospf neighbor'"
@@ -167,76 +176,77 @@ def verify_ospf_intervals(module):
         failure_summary += 'ospf neighbors cannot be verified since '
         failure_summary += 'output of command {} is None\n'.format(cmd)
 
-    # Verify hello and dead time intervals
-    for eth in eth_list:
-        cmd = "vtysh -c 'sh ip ospf interface eth-{}-1'".format(eth)
-        out = execute_commands(module, cmd)
+    if switch_name == interval_switch:
+        # Verify hello and dead time intervals
+        for eth in eth_list:
+            cmd = "vtysh -c 'sh ip ospf interface eth-{}-1'".format(eth)
+            out = execute_commands(module, cmd)
 
-        if out:
-            if 'Hello {}'.format(hello_timer) not in out:
+            if out:
+                if 'Hello {}'.format(hello_timer) not in out:
+                    RESULT_STATUS = False
+                    failure_summary += 'On switch {} '.format(switch_name)
+                    failure_summary += 'hello timer interval is not configured '
+                    failure_summary += 'for eth-{}-1 interface\n'.format(eth)
+
+                if 'Dead {}'.format(dead_timer) not in out:
+                    RESULT_STATUS = False
+                    failure_summary += 'On switch {} '.format(switch_name)
+                    failure_summary += 'dead timer interval is not configured '
+                    failure_summary += 'for eth-{}-1 interface\n'.format(eth)
+            else:
                 RESULT_STATUS = False
                 failure_summary += 'On switch {} '.format(switch_name)
-                failure_summary += 'hello timer interval is not configured '
-                failure_summary += 'for eth-{}-1 interface\n'.format(eth)
+                failure_summary += 'hello and deadtime intervals cannot be verified '
+                failure_summary += 'since output of command {} is None\n'.format(cmd)
 
-            if 'Dead {}'.format(dead_timer) not in out:
+            # Bring down the interface
+            down_cmd = 'ifconfig eth-{}-1 down'.format(eth)
+            execute_commands(module, down_cmd)
+
+            # Wait for dead time interval
+            time.sleep(int(dead_timer))
+
+            # Now, ospf neighbor for this down interface should not be displayed
+            cmd = "vtysh -c 'sh ip ospf neighbor'"
+            all_neighbors = execute_commands(module, cmd)
+
+            if all_neighbors:
+                if 'eth-{}-1'.format(eth) in all_neighbors:
+                    RESULT_STATUS = False
+                    failure_summary += 'On switch {} '.format(switch_name)
+                    failure_summary += 'ospf neighbor is showing up '
+                    failure_summary += 'for eth-{}-1 interface '.format(eth)
+                    failure_summary += 'even after bringing down this interface\n'
+            else:
                 RESULT_STATUS = False
                 failure_summary += 'On switch {} '.format(switch_name)
-                failure_summary += 'dead timer interval is not configured '
-                failure_summary += 'for eth-{}-1 interface\n'.format(eth)
-        else:
-            RESULT_STATUS = False
-            failure_summary += 'On switch {} '.format(switch_name)
-            failure_summary += 'hello and deadtime intervals cannot be verified '
-            failure_summary += 'since output of command {} is None\n'.format(cmd)
+                failure_summary += 'ospf neighbors cannot be verified since '
+                failure_summary += 'output of command {} is None\n'.format(cmd)
 
-        # Bring down the interface
-        down_cmd = 'ifconfig eth-{}-1 down'.format(eth)
-        execute_commands(module, down_cmd)
+            # Bring up the interface which we had brought down
+            up_cmd = 'ifconfig eth-{}-1 up'.format(eth)
+            execute_commands(module, up_cmd)
 
-        # Wait for dead time interval
-        time.sleep(int(dead_timer))
+            # Wait for hello time interval
+            time.sleep(int(hello_timer) + 2)
 
-        # Now, ospf neighbor for this down interface should not be displayed
-        cmd = "vtysh -c 'sh ip ospf neighbor'"
-        all_neighbors = execute_commands(module, cmd)
+            # Now, ospf neighbor for this up interface should be displayed
+            cmd = "vtysh -c 'sh ip ospf neighbor'"
+            all_neighbors = execute_commands(module, cmd)
 
-        if all_neighbors:
-            if 'eth-{}-1'.format(eth) in all_neighbors:
+            if all_neighbors:
+                if 'eth-{}-1'.format(eth) not in all_neighbors:
+                    RESULT_STATUS = False
+                    failure_summary += 'On switch {} '.format(switch_name)
+                    failure_summary += 'ospf neighbor is not showing up '
+                    failure_summary += 'for eth-{}-1 interface '.format(eth)
+                    failure_summary += 'even after bringing up this interface\n'
+            else:
                 RESULT_STATUS = False
                 failure_summary += 'On switch {} '.format(switch_name)
-                failure_summary += 'ospf neighbor is showing up '
-                failure_summary += 'for eth-{}-1 interface '.format(eth)
-                failure_summary += 'even after bringing down this interface\n'
-        else:
-            RESULT_STATUS = False
-            failure_summary += 'On switch {} '.format(switch_name)
-            failure_summary += 'ospf neighbors cannot be verified since '
-            failure_summary += 'output of command {} is None\n'.format(cmd)
-
-        # Bring up the interface which we had brought down
-        up_cmd = 'ifconfig eth-{}-1 up'.format(eth)
-        execute_commands(module, up_cmd)
-
-        # Wait for hello time interval
-        time.sleep(int(hello_timer) + 2)
-
-        # Now, ospf neighbor for this up interface should be displayed
-        cmd = "vtysh -c 'sh ip ospf neighbor'"
-        all_neighbors = execute_commands(module, cmd)
-
-        if all_neighbors:
-            if 'eth-{}-1'.format(eth) not in all_neighbors:
-                RESULT_STATUS = False
-                failure_summary += 'On switch {} '.format(switch_name)
-                failure_summary += 'ospf neighbor is not showing up '
-                failure_summary += 'for eth-{}-1 interface '.format(eth)
-                failure_summary += 'even after bringing up this interface\n'
-        else:
-            RESULT_STATUS = False
-            failure_summary += 'On switch {} '.format(switch_name)
-            failure_summary += 'ospf neighbors cannot be verified since '
-            failure_summary += 'output of command {} is None\n'.format(cmd)
+                failure_summary += 'ospf neighbors cannot be verified since '
+                failure_summary += 'output of command {} is None\n'.format(cmd)
 
     HASH_DICT['result.detail'] = failure_summary
 
@@ -249,6 +259,7 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             switch_name=dict(required=False, type='str'),
+            interval_switch=dict(required=False, type='str'),
             eth_list=dict(required=False, type='str'),
             hello_timer=dict(required=False, type='str'),
             dead_timer=dict(required=False, type='str'),
