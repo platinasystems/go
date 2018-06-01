@@ -43,6 +43,7 @@
       test_bird_ospf_hello_and_dead_timers:
         switch_name: "{{ inventory_hostname }}"
         config_file: "{{ lookup('file', '../../files/{{inventory_hostname}}/bird_ospf_hello_and_dead_timers.conf') }}"
+        interval_switch: "{{ groups['spine'][0] }}"
         hello_timer: "5"
         dead_timer: "10"
         eth_list: "5,11"

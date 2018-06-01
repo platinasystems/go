@@ -38,6 +38,11 @@ options:
         - Name of the switch on which tests will be performed.
       required: False
       type: str
+    interval_switch:
+      description:
+        - Name of the switch on which interfaces need to be tested.
+      required: False
+      type: str
     config_file:
       description:
         - OSPF config which have been added into /etc/bird/bird.conf.
@@ -147,6 +152,7 @@ def verify_bird_ospf_timers(module):
     global RESULT_STATUS, HASH_DICT
     failure_summary, eth_interface = '', ''
     switch_name = module.params['switch_name']
+    interval_switch = module.params['interval_switch']
     package_name = module.params['package_name']
     hello_timer = module.params['hello_timer']
     dead_timer = module.params['dead_timer']
@@ -160,13 +166,16 @@ def verify_bird_ospf_timers(module):
     execute_commands(module, 'service {} restart'.format(package_name))
     execute_commands(module, 'service {} status'.format(package_name))
 
+    for eth in eth_list:
+        execute_commands(module, 'ifconfig eth-{}-1 up'.format(eth))
+
     # Get ospf interface details
     interface_cmd = 'birdc show ospf interface'
     interface_out = execute_commands(module, interface_cmd)
-    
+
     if interface_out:
         interface_out = interface_out.lower()
-    
+
         # Verify hello and dead timers values
         if ('hello timer: {}'.format(hello_timer) not in interface_out and
                 'dead timer: {}'.format(dead_timer) not in interface_out):
@@ -181,48 +190,49 @@ def verify_bird_ospf_timers(module):
         failure_summary += 'hello and dead timers cannot be verified since '
         failure_summary += 'output of command {} is None'.format(interface_cmd)
 
-    for eth in eth_list:
-        if 'eth-{}-1'.format(eth) in config_file:
-            eth_interface = 'eth-{}-1'.format(eth)
+    if switch_name == interval_switch:
+        for eth in eth_list:
+            if 'eth-{}-1'.format(eth) in config_file:
+                eth_interface = 'eth-{}-1'.format(eth)
 
-    if eth_interface:
-        # Bring down the interface
-        execute_commands(module, 'ifconfig {} down'.format(eth_interface))
+        if eth_interface:
+            # Bring down the interface
+            execute_commands(module, 'ifconfig {} down'.format(eth_interface))
 
-        # Wait until dead timer interval
-        time.sleep(int(dead_timer))
+            # Wait until dead timer interval
+            time.sleep(int(dead_timer))
 
-        # Verify ospf neighbor for this interface.
-        # It should not display the ospf relationship for this interface.
-        cmd = 'birdc show ospf neighbor'
-        ospf_out = execute_commands(module, cmd)
+            # Verify ospf neighbor for this interface.
+            # It should not display the ospf relationship for this interface.
+            cmd = 'birdc show ospf neighbor'
+            ospf_out = execute_commands(module, cmd)
 
-        if ospf_out:
-            if eth_interface in ospf_out:
-                RESULT_STATUS = False
-                failure_summary += 'On switch {} '.format(switch_name)
-                failure_summary += 'ospf neighbor is showing up '
-                failure_summary += 'for {} interface '.format(eth_interface)
-                failure_summary += 'even after bringing down this interface\n'
+            if ospf_out:
+                if eth_interface in ospf_out:
+                    RESULT_STATUS = False
+                    failure_summary += 'On switch {} '.format(switch_name)
+                    failure_summary += 'ospf neighbor is showing up '
+                    failure_summary += 'for {} interface '.format(eth_interface)
+                    failure_summary += 'even after bringing down this interface\n'
 
-        # Now, bring up the interface
-        execute_commands(module, 'ifconfig {} up'.format(eth_interface))
+            # Now, bring up the interface
+            execute_commands(module, 'ifconfig {} up'.format(eth_interface))
 
-        # Wait until hello timer interval
-        time.sleep(int(hello_timer))
+            # Wait until hello timer interval
+            time.sleep(int(hello_timer))
 
-        # Verify ospf neighbor for this interface.
-        # It should now display the ospf relationship for this interface.
-        cmd = 'birdc show ospf neighbor'
-        ospf_out = execute_commands(module, cmd)
+            # Verify ospf neighbor for this interface.
+            # It should now display the ospf relationship for this interface.
+            cmd = 'birdc show ospf neighbor'
+            ospf_out = execute_commands(module, cmd)
 
-        if ospf_out:
-            if eth_interface not in ospf_out:
-                RESULT_STATUS = False
-                failure_summary += 'On switch {} '.format(switch_name)
-                failure_summary += 'ospf neighbor is not showing up '
-                failure_summary += 'for {} interface '.format(eth_interface)
-                failure_summary += 'even after bringing up this interface\n'
+            if ospf_out:
+                if eth_interface not in ospf_out:
+                    RESULT_STATUS = False
+                    failure_summary += 'On switch {} '.format(switch_name)
+                    failure_summary += 'ospf neighbor is not showing up '
+                    failure_summary += 'for {} interface '.format(eth_interface)
+                    failure_summary += 'even after bringing up this interface\n'
 
     HASH_DICT['result.detail'] = failure_summary
 
@@ -235,6 +245,7 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             switch_name=dict(required=False, type='str'),
+            interval_switch=dict(required=False, type='str'),
             config_file=dict(required=False, type='str'),
             package_name=dict(required=False, type='str'),
             eth_list=dict(required=False, type='str'),
