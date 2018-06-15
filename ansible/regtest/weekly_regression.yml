@@ -1,11 +1,15 @@
 ---
 
 # Upgrade invaders to latest goes from /home/mpleso/platinabot
-- include: playbooks/upgrade_invaders_to_latest_goes.yml
+#- include: playbooks/upgrade_invaders_to_latest_goes.yml
 
 
 # Reset invaders to default state
-- include: playbooks/reset_invaders_to_default.yml
+#- include: playbooks/reset_invaders_to_default.yml
+
+
+# Reset invaders to default state
+- include: playbooks/master_reset_invaders.yml
 
 
 # Run all quagga test cases
@@ -29,7 +33,7 @@
 
 
 # Run all docker test cases
-- include: docker_main.yml
+#- include: docker_main.yml
 
 
 # Run all vlan test cases
