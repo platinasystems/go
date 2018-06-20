@@ -1,0 +1,23 @@
+---
+
+- hosts: spine
+  become: true
+  ignore_errors: yes
+  tasks:
+    - name: Stop iperf server instances
+      command: "pkill iperf"
+
+
+- hosts: leaf:spine
+  become: true
+  ignore_errors: yes
+  tasks:
+    - name: Reset the setup configs
+      reset_invaders:
+        switch_name: "{{ inventory_hostname }}"
+        leaf_list: "{{ groups['leaf'] }}"
+        spine_list: "{{ groups['spine'] }}"
+        leaf_eth_ips_last_octet: "29,30"
+        spine_eth_ips_last_octet: "31,32"
+        platina_redis_channel: "{{ platina_redis_channel }}"
+
