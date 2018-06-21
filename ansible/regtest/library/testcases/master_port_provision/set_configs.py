@@ -280,7 +280,7 @@ def verify_port_links(module):
     for eth in eth_list:
         for port in subport:
             cmd = 'goes hget {} vnet.eth-{}-{}.link'.format(platina_redis_channel, eth, port)
-            out = execute_commands(module, cmd)
+            out = run_cli(module, cmd)
             if 'true' not in out:
                 RESULT_STATUS = False
                 failure_summary += 'On switch {} '.format(switch_name)
@@ -291,7 +291,7 @@ def verify_port_links(module):
     for eth in eth_list:
         for port in subport:
             cmd = 'goes hget {} vnet.eth-{}-{}.media'.format(platina_redis_channel, eth, port)
-            out = execute_commands(module, cmd)
+            out = run_cli(module, cmd)
             if media not in out:
                 RESULT_STATUS = False
                 failure_summary += 'On switch {} '.format(switch_name)
@@ -302,7 +302,7 @@ def verify_port_links(module):
     for eth in eth_list:
         for port in subport:
             cmd = 'goes hget {} vnet.eth-{}-{}.fec'.format(platina_redis_channel, eth, port)
-            out = execute_commands(module, cmd)
+            out = run_cli(module, cmd)
             if fec not in out:
                 RESULT_STATUS = False
                 failure_summary += 'On switch {} '.format(switch_name)
@@ -316,7 +316,7 @@ def verify_port_links(module):
     for eth in eth_list:
         for port in subport:
             cmd = 'goes hget {} vnet.eth-{}-{}.speed'.format(platina_redis_channel, eth, port)
-            out = execute_commands(module, cmd)
+            out = run_cli(module, cmd)
             if speed not in out:
                 RESULT_STATUS = False
                 failure_summary += 'On switch {} '.format(switch_name)
