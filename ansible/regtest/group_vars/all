@@ -2,7 +2,7 @@
 reset_config: True
 platina_redis_channel: platina-mk1
 
-failure_report: /var/log/regression/failure_report_file
+regression_summary_report: /var/log/regression/regression_summary_file
 
 bgp_log_dir: /var/log/regression/bgp
 ospf_log_dir: /var/log/regression/ospf

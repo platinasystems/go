@@ -130,8 +130,8 @@
         msg: "Failure summary: {{ result.result_detail }}"
 
     - lineinfile:
-        path: "{{ failure_report }}"
-        line: "{{ hash_name }}- {{ result.result_status }}"
+        path: "{{ regression_summary_report }}"
+        line: "{{ hash_name }}: {{ result.result_status }}"
 
 
 - hosts: leaf:spine

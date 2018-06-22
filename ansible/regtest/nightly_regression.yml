@@ -4,7 +4,7 @@
 
   tasks:
     - file:
-        path: "{{ failure_report }}"
+        path: "{{ regression_summary_report }}"
         state: touch
 
 
@@ -125,6 +125,6 @@
 
   tasks:
     - debug:
-        msg: "{{lookup('file', '{{ failure_report }}') }}"
+        msg: "{{lookup('file', '{{ regression_summary_report }}') }}"
 
 
