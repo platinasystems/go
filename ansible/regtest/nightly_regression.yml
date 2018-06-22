@@ -1,4 +1,12 @@
 ---
+- hosts: server_emulator
+  become: true
+
+  tasks:
+    - file:
+        path: "{{ failure_report }}"
+        state: touch
+
 
 # Uninstall packages stack
 - include: playbooks/installation/uninstall_packages.yml
@@ -110,4 +118,13 @@
 - include: playbooks/port_provision/master/50g_cr_fec_cl74_autoneg_off_lanes_2_count_2.yml
 
 #- include: playbooks/port_provision/master/50g_cr_fec_none_autoneg_off_lanes_2_count_2.yml
+
+
+- hosts: server_emulator
+  become: true
+
+  tasks:
+    - debug:
+        msg: "{{lookup('file', '{{ failure_report }}') }}"
+
 
