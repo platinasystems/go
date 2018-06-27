@@ -1,8 +1,12 @@
 ---
 - hosts: server_emulator
   become: true
-
+  ignore_errors: yes
   tasks:
+    - file:
+        path: "{{ regression_summary_report }}"
+        state: absent
+
     - file:
         path: "{{ regression_summary_report }}"
         state: touch
@@ -122,9 +126,6 @@
 
 - hosts: server_emulator
   become: true
-
   tasks:
     - debug:
         msg: "{{lookup('file', '{{ regression_summary_report }}') }}"
-
-
