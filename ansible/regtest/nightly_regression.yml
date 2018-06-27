@@ -129,3 +129,10 @@
   tasks:
     - debug:
         msg: "{{lookup('file', '{{ regression_summary_report }}') }}"
+
+    - shell: cat "{{ regression_summary_report }}"
+      register: summary_report
+
+    - fail:
+        msg: "Nightly Regression Failed"
+      when: summary_report.stdout.find('Failed') != -1

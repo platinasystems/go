@@ -1,4 +1,16 @@
 ---
+- hosts: server_emulator
+  become: true
+  ignore_errors: yes
+  tasks:
+    - file:
+        path: "{{ regression_summary_report }}"
+        state: absent
+
+    - file:
+        path: "{{ regression_summary_report }}"
+        state: touch
+
 
 # Upgrade invaders to latest goes from /home/mpleso/platinabot
 #- include: playbooks/upgrade_invaders_to_latest_goes.yml
@@ -38,3 +50,17 @@
 
 # Run all vlan test cases
 #- include: vlan_main.yml
+
+
+- hosts: server_emulator
+  become: true
+  tasks:
+    - debug:
+        msg: "{{lookup('file', '{{ regression_summary_report }}') }}"
+
+    - shell: cat "{{ regression_summary_report }}"
+      register: summary_report
+
+    - fail:
+        msg: "Weekly Regression Failed"
+      when: summary_report.stdout.find('Failed') != -1
