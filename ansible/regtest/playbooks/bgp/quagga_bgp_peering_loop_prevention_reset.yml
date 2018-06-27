@@ -2,6 +2,7 @@
 
 - hosts: leaf:spine
   become: true
+  ignore_errors: yes
   tasks:
     - name: Restore backup of /etc/quagga/bgpd.conf
       copy:
@@ -12,6 +13,10 @@
     - name: Remove backup file
       file:
         path: "{{ quagga_bgp_conf_file_bck }}"
+        state: absent
+
+    - file:
+        path: "{{ bgp_loop_prevention_log_file }}"
         state: absent
 
     - name: Delete dummy interface

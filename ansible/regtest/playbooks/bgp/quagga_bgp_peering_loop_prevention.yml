@@ -62,10 +62,6 @@
         log_dir_path: "{{ bgp_log_dir }}"
       register: module_out
 
-    - file:
-        path: "{{ bgp_loop_prevention_log_file }}"
-        state: absent
-
     - command: "date +%Y%m%d%T"
       register: end_time
 
