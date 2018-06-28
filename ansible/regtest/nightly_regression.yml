@@ -127,11 +127,11 @@
 - hosts: server_emulator
   become: true
   tasks:
-    - debug:
-        msg: "{{lookup('file', '{{ regression_summary_report }}') }}"
-
     - shell: cat "{{ regression_summary_report }}"
       register: summary_report
+
+    - debug:
+        var: summary_report.stdout_lines
 
     - fail:
         msg: "Nightly Regression Failed"
