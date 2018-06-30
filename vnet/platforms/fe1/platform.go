@@ -9,11 +9,18 @@ import (
 	"github.com/platinasystems/go/vnet/ethernet"
 )
 
+// from go/main/goes-platina-mk1/vnetd.go:vnetdInit()
+// see go/vnet/vnet.go:PortEntry
 type PortProvision struct {
-	Name  string
-	Lanes uint
-	Speed string
-	Count uint
+	Name         string
+	Lanes        uint
+	Speed        string
+	Count        uint
+	Portindex    int16
+	Subportindex int8
+	PuntIndex    uint8
+	Devtype      uint8
+	Vid          ethernet.VlanTag
 }
 
 type PortProvisionConfig struct {

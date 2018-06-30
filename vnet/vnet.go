@@ -17,16 +17,25 @@ import (
 
 var Xeth *xeth.Xeth
 
+// xeth.MsgIfinfo xeth driver
+// PortEntry go/main/goes-platina-mk1/vnetd.go:vnetdInit()
+// PortProvision go/main/goes-platina-mk1/vnetd.go:parsePortConfig()
+// PortConfig fe1/platform.go:parsePortConfig()
+// Port fe1/internal/fe1a/port_init.go:PortInit()
 type PortEntry struct {
-	Net         uint64
-	Ifindex     int32
-	Iflinkindex int32
-	Flags       xeth.EthtoolFlagBits
-	Iff         xeth.Iff
-	Vid         uint16
-	Speed       xeth.Mbps
-	Addr        [xeth.ETH_ALEN]uint8
-	IPNets      []*net.IPNet
+	Net          uint64
+	Ifindex      int32
+	Iflinkindex  int32 // system side eth# ifindex
+	Flags        xeth.EthtoolFlagBits
+	Iff          xeth.Iff
+	Speed        xeth.Mbps
+	Vid          uint16 // port_vid or customer Vid
+	Portindex    int16
+	Subportindex int8
+	PuntIndex    uint8 // 0-based meth#, currently computed from Vid
+	Devtype      uint8
+	Addr         [xeth.ETH_ALEN]uint8
+	IPNets       []*net.IPNet
 }
 
 var Ports map[string]*PortEntry
