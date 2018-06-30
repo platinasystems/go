@@ -47,12 +47,6 @@ type mk1Main struct {
 	fe1.Platform
 }
 
-// FIXME must get from xeth, this local calculation only valid for xeth names
-func xethPortVid(port_index int16, subport_index int8) (port_vid uint16) {
-	port_vid = uint16(4094 - port_index)
-	return
-}
-
 func vnetdInit() {
 	var err error
 	// FIXME vnet shouldn't be so bursty
@@ -95,7 +89,7 @@ func vnetdInit() {
 	}
 	p := new(mk1Main)
 	vnet.Xeth.DumpIfinfo()
-	err = vnet.Xeth.UntilBreak(func(buf []byte) error {
+	vnet.Xeth.UntilBreak(func(buf []byte) error {
 		ptr := unsafe.Pointer(&buf[0])
 		switch xeth.KindOf(buf) {
 		case xeth.XETH_MSG_KIND_ETHTOOL_FLAGS:
@@ -161,12 +155,12 @@ func vnetdInit() {
 				brm := vnet.SetBridgeMember(ifname.String())
 				brm.Vid = msg.Id
 				brm.IsTagged = false
-				brm.PortVid = uint16(msg.Portid) // xethPortVid(msg.Portindex, msg.Subportindex)
+				brm.PortVid = uint16(msg.Portid)
 			case xeth.XETH_DEVTYPE_TAGGED_BRIDGE_PORT:
 				brm := vnet.SetBridgeMember(ifname.String())
 				brm.Vid = msg.Id // customer vlan
 				brm.IsTagged = true
-				brm.PortVid = uint16(msg.Portid) // xethPortVid(msg.Portindex, msg.Subportindex)
+				brm.PortVid = uint16(msg.Portid)
 			}
 			if true { // FIXME
 				fmt.Printf("XETH_MSG_KIND_IFINFO: %+v\n", msg)
@@ -186,9 +180,6 @@ func vnetdInit() {
 		}
 		return nil
 	})
-	if err != nil {
-		panic(err)
-	}
 	if true {
 		for ifname, entry := range vnet.Ports {
 			fmt.Print(ifname, ".flags: ", entry.Flags, "\n")
