@@ -5,9 +5,10 @@ package _go_
 
 var Package = map[string]string{
 	"importpath": "github.com/platinasystems/go",
-	"generated.by": "tgrennan@platinasystems.com",
-	"generated.on": "2017-05-10 18:30:54.596579136 +0000 UTC",
-	"version": "FIXME with go generate github.com/platinasystems/go",
+	"generated.by": "rtaylor@platinasystems.com",
+	"generated.on": "2018-07-09 21:43:11.796821542 +0000 UTC",
+	"version": "27991034f4277f46c08dbea0cb4232581b737cba",
+	"tag": `v0.41-231-g2799103'`,
 	"license": `Copyright © 2015-2016 Platina Systems, Inc. All rights reserved.
 
 This program is free software; you can redistribute it and/or modify it

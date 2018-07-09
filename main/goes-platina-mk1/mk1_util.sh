@@ -72,6 +72,50 @@ xeth_del()
     done
 }
 
+xeth_br_add()
+{
+    vid=$1
+    shift
+    ip link add xeth.$vid type platina-mk1
+}
+
+xeth_br_del()
+{
+    vid=$1
+    shift
+    ip link del xeth.$vid type platina-mk1
+}
+
+xeth_brm_add()
+{
+    vid=$1
+    shift
+    taguntag=$1
+    shift
+    for i in $xeth_list; do
+	ip link add $i.$vid$taguntag type platina-mk1
+    done
+}
+
+xeth_brm_del()
+{
+    vid=$1
+    shift
+    taguntag=$1
+    shift
+    for i in $xeth_list; do
+	ip link del $i.$vid$taguntag type platina-mk1
+    done
+}
+
+xeth_br_show()
+{
+    vid=$1
+    shift
+    ip link | egrep eth.$vid
+    ip link | egrep eth[0-9]+.$vid
+}
+
 xeth_show()
 {
     for i in $xeth_list; do
@@ -144,6 +188,16 @@ elif [ $cmd == "add" ]; then
     xeth_add $xeth_list
 elif [ $cmd == "del" ]; then
     xeth_del $xeth_list
+elif [ $cmd == "br_add" ]; then
+    xeth_br_add $1
+elif [ $cmd == "br_del" ]; then
+    xeth_br_del $1
+elif [ $cmd == "brm_add" ]; then
+    xeth_brm_add $1 $2 $xeth_list
+elif [ $cmd == "brm_del" ]; then
+    xeth_brm_del $1 $2 $xeth_list
+elif [ $cmd == "br_show" ]; then
+    xeth_br_show $1
 elif [ $cmd == "up" ]; then
     xeth_up $xeth_list
 elif [ $cmd == "down" ]; then
@@ -157,3 +211,5 @@ elif [ $cmd == "stat" ]; then
 elif [ $cmd == "to_netns" ]; then
     xeth_to_netns $1 $xeth_list
 fi
+
+echo "err "$?
