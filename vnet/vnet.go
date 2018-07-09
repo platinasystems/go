@@ -47,6 +47,11 @@ type BridgeEntry struct {
 	Ifindex     int32
 	Iflinkindex int32 // system side eth# ifindex
 	PuntIndex   uint8
+	Flags       xeth.EthtoolFlagBits
+	Iff         xeth.Iff
+	Vid         uint16
+	PortId      int16
+	Speed       xeth.Mbps
 	Addr        [xeth.ETH_ALEN]uint8
 	IPNets      []*net.IPNet
 }

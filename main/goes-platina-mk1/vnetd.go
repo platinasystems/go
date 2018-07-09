@@ -161,12 +161,12 @@ func vnetdInit() {
 				brm := vnet.SetBridgeMember(ifname.String())
 				brm.Vid = msg.Id
 				brm.IsTagged = false
-				brm.PortVid = xethPortVid(msg.Portindex, msg.Subportindex)
+				brm.PortVid = uint16(msg.Portid) // xethPortVid(msg.Portindex, msg.Subportindex)
 			case xeth.XETH_DEVTYPE_TAGGED_BRIDGE_PORT:
 				brm := vnet.SetBridgeMember(ifname.String())
 				brm.Vid = msg.Id // customer vlan
 				brm.IsTagged = true
-				brm.PortVid = xethPortVid(msg.Portindex, msg.Subportindex)
+				brm.PortVid = uint16(msg.Portid) // xethPortVid(msg.Portindex, msg.Subportindex)
 			}
 			if true { // FIXME
 				fmt.Printf("XETH_MSG_KIND_IFINFO: %+v\n", msg)
