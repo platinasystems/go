@@ -5,10 +5,8 @@
 package port2port
 
 var Conf = [][2]string{
-	{"eth-1-0", "eth-2-0"},
-	{"eth-3-0", "eth-4-0"},
-	{"eth-5-0", "eth-6-0"},
-	{"eth-7-0", "eth-8-0"},
-	{"eth-9-0", "eth-10-0"},
-	{"eth-11-0", "eth-12-0"},
+	{"xeth1", "xeth3"},
+	{"xeth10", "xeth12"},
+	{"xeth20", "xeth21"},
+	{"xeth30", "xeth31"},
 }

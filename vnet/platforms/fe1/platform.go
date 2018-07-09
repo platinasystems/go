@@ -19,12 +19,24 @@ type PortProvision struct {
 	Portindex    int16
 	Subportindex int8
 	PuntIndex    uint8
-	Devtype      uint8
 	Vid          ethernet.VlanTag
 }
 
 type PortProvisionConfig struct {
 	Ports []PortProvision
+}
+
+// later may add stg here
+// FIXME add mac
+type BridgeProvision struct {
+	PuntIndex        uint8
+	TaggedPortVids   []ethernet.VlanTag
+	UntaggedPortVids []ethernet.VlanTag
+}
+
+// mapped by vid
+type BridgeProvisionConfig struct {
+	Bridges map[ethernet.VlanTag]*BridgeProvision
 }
 
 type PlatformConfig struct {
@@ -37,8 +49,9 @@ type PlatformConfig struct {
 	// Enable using PCI MSI interrupt for fe1 switch.
 	EnableMsiInterrupt     bool
 	UseCpuForPuntAndInject bool
-	//Port Provisioning
-	PortConfig PortProvisionConfig
+
+	PortConfig   PortProvisionConfig
+	BridgeConfig BridgeProvisionConfig
 }
 
 type SwitchPort struct {

@@ -47,6 +47,12 @@ type mk1Main struct {
 	fe1.Platform
 }
 
+// FIXME must get from xeth, this local calculation only valid for xeth names
+func xethPortVid(port_index int16, subport_index int8) (port_vid uint16) {
+	port_vid = uint16(4094 - port_index)
+	return
+}
+
 func vnetdInit() {
 	var err error
 	// FIXME vnet shouldn't be so bursty
@@ -95,47 +101,75 @@ func vnetdInit() {
 		case xeth.XETH_MSG_KIND_ETHTOOL_FLAGS:
 			msg := (*xeth.MsgEthtoolFlags)(ptr)
 			ifname := xeth.Ifname(msg.Ifname)
-			vnet.SetPort(ifname.String()).Flags =
-				xeth.EthtoolFlagBits(msg.Flags)
+			entry, found := vnet.Ports[ifname.String()]
+			if found {
+				entry.Flags = xeth.EthtoolFlagBits(msg.Flags)
+			}
+			if true { // FIXME
+				fmt.Printf("XETH_MSG_KIND_ETHTOOL_FLAGS: found:%v %+v\n",
+					found, msg)
+			}
 		case xeth.XETH_MSG_KIND_ETHTOOL_SETTINGS:
 			msg := (*xeth.MsgEthtoolSettings)(ptr)
 			ifname := xeth.Ifname(msg.Ifname)
-			vnet.SetPort(ifname.String()).Speed =
-				xeth.Mbps(msg.Speed)
-		case xeth.XETH_MSG_KIND_IFINFO:
-			msg := (*xeth.MsgIfinfo)(ptr)
-			ifname := xeth.Ifname(msg.Ifname)
-			pe := vnet.SetPort(ifname.String())
-			pe.Ifindex = msg.Ifindex
-			pe.Iflinkindex = msg.Iflinkindex
-			pe.Iff = xeth.Iff(msg.Flags)
-			copy(pe.Addr[:], msg.Addr[:])
-			pe.Net = msg.Net
-			pe.Portindex = msg.Portindex
-
-			// -1 if unspecified
-			if msg.Subportindex >= 0 {
-				pe.Subportindex = msg.Subportindex
+			entry, found := vnet.Ports[ifname.String()]
+			if found {
+				entry.Speed = xeth.Mbps(msg.Speed)
 			}
-			pe.Vid = msg.Id
+			if true { // FIXME
+				fmt.Printf("XETH_MSG_KIND_ETHTOOL_SETTINGS: found:%v %+v\n",
+					found, msg)
+			}
+		case xeth.XETH_MSG_KIND_IFINFO:
+			var punt_index uint8
+			msg := (*xeth.MsgIfinfo)(ptr)
 
 			// convert eth1/eth2 to meth-0/meth-1
 			switch msg.Iflinkindex {
 			case int32(eth1.Index):
-				pe.PuntIndex = 0
+				punt_index = 0
 			case int32(eth2.Index):
-				pe.PuntIndex = 1
-			default:
-				panic("Invalid PuntIndex")
+				punt_index = 1
 			}
 
-			if pe.Vid == 0 {
-				fmt.Println("XETH_MSG_KIND_IFINFO: %v missing port_vid, upgrade platina-mk1.ko\n", ifname.String())
-			}
-			pe.Devtype = msg.Devtype
+			ifname := xeth.Ifname(msg.Ifname)
 
-			if false {
-				fmt.Printf("XETH_MSG_KIND_IFINFO: %v, %+v\n", ifname.String, msg)
+			switch msg.Devtype {
+			case xeth.XETH_DEVTYPE_PORT:
+				pe := vnet.SetPort(ifname.String())
+				pe.Ifindex = msg.Ifindex
+				pe.Iflinkindex = msg.Iflinkindex
+				pe.Iff = xeth.Iff(msg.Flags)
+				copy(pe.Addr[:], msg.Addr[:])
+				pe.Net = msg.Net
+
+				pe.Portindex = msg.Portindex
+				// -1 if unspecified
+				if msg.Subportindex >= 0 {
+					pe.Subportindex = msg.Subportindex
+				}
+				pe.Vid = msg.Id // L3 port-tag
+				pe.PuntIndex = punt_index
+			case xeth.XETH_DEVTYPE_BRIDGE:
+				be := vnet.SetBridge(msg.Id)
+				be.Ifindex = msg.Ifindex
+				be.Iflinkindex = msg.Iflinkindex
+				be.PuntIndex = punt_index
+				copy(be.Addr[:], msg.Addr[:])
+				be.Net = msg.Net
+			case xeth.XETH_DEVTYPE_UNTAGGED_BRIDGE_PORT:
+				brm := vnet.SetBridgeMember(ifname.String())
+				brm.Vid = msg.Id
+				brm.IsTagged = false
+				brm.PortVid = xethPortVid(msg.Portindex, msg.Subportindex)
+			case xeth.XETH_DEVTYPE_TAGGED_BRIDGE_PORT:
+				brm := vnet.SetBridgeMember(ifname.String())
+				brm.Vid = msg.Id // customer vlan
+				brm.IsTagged = true
+				brm.PortVid = xethPortVid(msg.Portindex, msg.Subportindex)
+			}
+			if true { // FIXME
+				fmt.Printf("XETH_MSG_KIND_IFINFO: %+v\n", msg)
 			}
 		case xeth.XETH_MSG_KIND_IFA:
 			msg := (*xeth.MsgIfa)(ptr)
@@ -145,6 +179,9 @@ func vnetdInit() {
 				pe.AddIPNet(msg.Prefix())
 			} else if msg.IsDel() {
 				pe.DelIPNet(msg.Prefix())
+			}
+			if true { // FIXME
+				fmt.Printf("XETH_MSG_KIND_IFA: %+v\n", msg)
 			}
 		}
 		return nil
@@ -191,7 +228,6 @@ func (p *mk1Main) parsePortConfig() (err error) {
 			pp.Name = ifname
 			pp.Portindex = entry.Portindex
 			pp.Subportindex = entry.Subportindex
-			pp.Devtype = entry.Devtype
 			pp.Vid = ethernet.VlanTag(entry.Vid)
 			pp.PuntIndex = entry.PuntIndex
 			pp.Speed = fmt.Sprintf("%dg", entry.Speed/1000)
@@ -199,7 +235,7 @@ func (p *mk1Main) parsePortConfig() (err error) {
 			// 40G 2-lane and 40G 4-lane
 			// 20G 2-lane and 20G 1-lane
 			// others?
-			if false {
+			if true { // FIXME
 				fmt.Printf("From ethtool: name %v entry %+v pp %+v\n",
 					ifname, entry, pp)
 			}
@@ -221,6 +257,52 @@ func (p *mk1Main) parsePortConfig() (err error) {
 				fmt.Printf("PortConfig %s: %v\n", ifname, pp)
 			}
 			plat.PortConfig.Ports = append(plat.PortConfig.Ports, pp)
+		}
+	}
+	return
+}
+
+func (p *mk1Main) parseBridgeConfig() (err error) {
+	plat := &p.Platform
+
+	if plat.BridgeConfig.Bridges == nil {
+		plat.BridgeConfig.Bridges = make(map[ethernet.VlanTag]*fe1.BridgeProvision)
+	}
+
+	// for each bridge entry, create bridge config
+	for vid, entry := range vnet.Bridges {
+		bp, found := plat.BridgeConfig.Bridges[ethernet.VlanTag(vid)]
+		if !found {
+			bp = new(fe1.BridgeProvision)
+			plat.BridgeConfig.Bridges[ethernet.VlanTag(vid)] = bp
+		}
+		bp.PuntIndex = entry.PuntIndex
+		fmt.Printf("parse bridge %v\n", vid)
+	}
+
+	// for each bridgemember entry, add to pbm or ubm of matching bridge config
+	for ifname, entry := range vnet.BridgeMembers {
+		bp, found := plat.BridgeConfig.Bridges[ethernet.VlanTag(entry.Vid)]
+		if found {
+			if entry.IsTagged {
+				bp.TaggedPortVids =
+					append(bp.TaggedPortVids,
+						ethernet.VlanTag(entry.PortVid))
+			} else {
+				bp.UntaggedPortVids =
+					append(bp.UntaggedPortVids,
+						ethernet.VlanTag(entry.PortVid))
+			}
+			if true {
+				fmt.Printf("bridgemember %v added to vlan %v\n",
+					ifname,
+					entry.Vid)
+			}
+			fmt.Printf("bridgemember %+v\n", bp)
+		} else {
+			fmt.Printf("bridgemember %v ignored, vlan %v not found\n",
+				ifname,
+				entry.Vid)
 		}
 	}
 	return
@@ -261,6 +343,7 @@ func (p *mk1Main) vnetdHook(init func(), v *vnet.Vnet) error {
 
 	// Get initial config from platina-mk1
 	p.parsePortConfig()
+	p.parseBridgeConfig()
 
 	if err = mk1.PlatformInit(v, &p.Platform); err != nil {
 		return err
