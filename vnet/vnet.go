@@ -31,8 +31,9 @@ type PortEntry struct {
 	Iflinkindex  int32 // system side eth# ifindex
 	Flags        xeth.EthtoolFlagBits
 	Iff          xeth.Iff
-	Speed        xeth.Mbps
 	Vid          uint16 // port_vid
+	PortId       int16
+	Speed        xeth.Mbps
 	Portindex    int16
 	Subportindex int8
 	PuntIndex    uint8 // 0-based meth#, derived from Iflinkindex
@@ -47,11 +48,7 @@ type BridgeEntry struct {
 	Ifindex     int32
 	Iflinkindex int32 // system side eth# ifindex
 	PuntIndex   uint8
-	Flags       xeth.EthtoolFlagBits
-	Iff         xeth.Iff
 	Vid         uint16
-	PortId      int16
-	Speed       xeth.Mbps
 	Addr        [xeth.ETH_ALEN]uint8
 	IPNets      []*net.IPNet
 }
