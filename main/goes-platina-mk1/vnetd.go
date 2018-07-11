@@ -277,6 +277,7 @@ func (p *mk1Main) parseBridgeConfig() (err error) {
 			plat.BridgeConfig.Bridges[ethernet.VlanTag(vid)] = bp
 		}
 		bp.PuntIndex = entry.PuntIndex
+		bp.Addr = entry.Addr
 		fmt.Printf("parse bridge %v\n", vid)
 	}
 

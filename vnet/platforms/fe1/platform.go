@@ -5,6 +5,7 @@
 package fe1
 
 import (
+	"github.com/platinasystems/go/internal/xeth"
 	"github.com/platinasystems/go/vnet/devices/optics/sfp"
 	"github.com/platinasystems/go/vnet/ethernet"
 )
@@ -30,6 +31,7 @@ type PortProvisionConfig struct {
 // FIXME add mac
 type BridgeProvision struct {
 	PuntIndex        uint8
+	Addr             [xeth.ETH_ALEN]uint8
 	TaggedPortVids   []ethernet.VlanTag
 	UntaggedPortVids []ethernet.VlanTag
 }
