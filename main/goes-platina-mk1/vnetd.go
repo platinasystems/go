@@ -101,7 +101,7 @@ func vnetdInit() {
 			}
 			if true { // FIXME
 				fmt.Printf("XETH_MSG_KIND_ETHTOOL_FLAGS: found:%v %+v\n",
-					found, msg)
+					found, *msg)
 			}
 		case xeth.XETH_MSG_KIND_ETHTOOL_SETTINGS:
 			msg := (*xeth.MsgEthtoolSettings)(ptr)
@@ -112,7 +112,7 @@ func vnetdInit() {
 			}
 			if true { // FIXME
 				fmt.Printf("XETH_MSG_KIND_ETHTOOL_SETTINGS: found:%v %+v\n",
-					found, msg)
+					found, *msg)
 			}
 		case xeth.XETH_MSG_KIND_IFINFO:
 			var punt_index uint8
@@ -163,7 +163,7 @@ func vnetdInit() {
 				brm.PortVid = uint16(msg.Portid)
 			}
 			if true { // FIXME
-				fmt.Printf("XETH_MSG_KIND_IFINFO: %+v\n", msg)
+				fmt.Printf("XETH_MSG_KIND_IFINFO: %+v\n", *msg)
 			}
 		case xeth.XETH_MSG_KIND_IFA:
 			msg := (*xeth.MsgIfa)(ptr)
@@ -175,7 +175,7 @@ func vnetdInit() {
 				pe.DelIPNet(msg.Prefix())
 			}
 			if true { // FIXME
-				fmt.Printf("XETH_MSG_KIND_IFA: %+v\n", msg)
+				fmt.Printf("XETH_MSG_KIND_IFA: %+v\n", *msg)
 			}
 		}
 		return nil
