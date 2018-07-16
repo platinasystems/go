@@ -6,7 +6,7 @@ xeth_all()
         if [ $i == "lo" ]; then
             continue
         fi
-        if $(ethtool -i $i | grep -q mk1); then
+        if $(ethtool -i $i | egrep -q -e mk1 -e VLAN); then
             echo $i
         fi
     done
@@ -65,6 +65,13 @@ xeth_add()
     done
 }
 
+xeth_netport_add() {
+    xeth_list=$(grep -o " .eth.*" testdata/netport.yaml)
+    xeth_add
+    xeth_flap $xeth_list
+    xeth_isup
+}
+
 xeth_del()
 {
     for i in $xeth_list; do
@@ -76,14 +83,14 @@ xeth_br_add()
 {
     vid=$1
     shift
-    ip link add xeth.$vid type platina-mk1
+    ip link add xethbr.$vid type platina-mk1
 }
 
 xeth_br_del()
 {
     vid=$1
     shift
-    ip link del xeth.$vid type platina-mk1
+    ip link del xethbr.$vid type platina-mk1
 }
 
 xeth_brm_add()
@@ -121,6 +128,11 @@ xeth_show()
     for i in $xeth_list; do
         ip link show $i
     done
+}
+
+xeth_isup()
+{
+    xeth_show $xeth_list | grep -i state.up | wc -l
 }
 
 xeth_stat()
@@ -184,6 +196,11 @@ elif [ $cmd == "show" ]; then
     xeth_show $xeth_list
 elif [ $cmd == "showup" ]; then
     xeth_show $xeth_list | grep -i state.up
+elif [ $cmd == "test_init" ]; then
+    xeth_del $xeth_list
+    rmmod platina-mk1
+    modprobe platina-mk1
+    xeth_netport_add
 elif [ $cmd == "add" ]; then
     xeth_add $xeth_list
 elif [ $cmd == "del" ]; then
@@ -205,7 +222,7 @@ elif [ $cmd == "down" ]; then
 elif [ $cmd == "flap" ]; then
     xeth_flap $xeth_list
 elif [ $cmd == "isup" ]; then
-    xeth_show $xeth_list | grep -i state.up | wc -l
+    xeth_isup
 elif [ $cmd == "stat" ]; then
     xeth_stat $xeth_list | grep -v " 0$"
 elif [ $cmd == "to_netns" ]; then
