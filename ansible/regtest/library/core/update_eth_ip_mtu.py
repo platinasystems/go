@@ -40,12 +40,6 @@ options:
         - Config file describing eth ip and mtu details.
       required: False
       type: str
-    revert:
-      description:
-        - Flag to indicate if we want to revert eth ip and mtu to default.
-      required: False
-      type: bool
-      default: False
 """
 
 EXAMPLES = """
@@ -88,7 +82,6 @@ def main():
         argument_spec=dict(
             switch_name=dict(required=False, type='str'),
             config_file=dict(required=False, type='str', default=''),
-            revert=dict(required=False, type='bool', default=False),
         )
     )
 
@@ -97,12 +90,6 @@ def main():
     msg = ''
 
     for line in config_file:
-        if module.params['revert']:
-            if 'mtu' in line:
-                line = line.split()
-                line[3] = '9216'
-                line = ' '.join(line)
-
         run_cli(module, line)
         msg += "On switch {}, executed '{}'".format(switch_name, line)
 
