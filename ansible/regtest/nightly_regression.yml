@@ -68,60 +68,30 @@
 - include: playbooks/installation/uninstall_packages.yml
 
 
+# Install bird
+- include: playbooks/installation/bird_install.yml
+
+
 # Restart goes
 - include: playbooks/goes_restart.yml
 
 
-# Run few port provisioning test cases
-#- include: playbooks/port_provision/100g_cr_fec_cl91_autoneg_off.yml
+# Run all bird bgp test cases
+- include: playbooks/bgp/bird_bgp_peering_ibgp_route_advertise.yml
 
-#- include: playbooks/port_provision/10g_cr_fec_none_autoneg_on_lanes_1_count_4.yml
+- include: playbooks/bgp/bird_bgp_peering_authentication.yml
 
-#- include: playbooks/port_provision/25g_cr_fec_none_autoneg_off.yml
+- include: playbooks/bgp/bird_bgp_peering_local_preference.yml
 
-#- include: playbooks/port_provision/40g_cr_fec_cl74_autoneg_off_lanes_2_count_2.yml
+- include: playbooks/bgp/bird_bgp_peering_route_reflector.yml
 
-#- include: playbooks/port_provision/40g_cr_fec_cl74_autoneg_on_lanes_4_count_1.yml
 
-#- include: playbooks/port_provision/40g_cr_fec_none_autoneg_off_lanes_2_count_2.yml
+# Run all bird ospf test cases
+- include: playbooks/ospf/bird_ospf_with_different_areas.yml
 
-#- include: playbooks/port_provision/40g_cr_fec_none_autoneg_on_lanes_4_count_1.yml
+- include: playbooks/ospf/bird_ospf_loadbalancing.yml
 
-#- include: playbooks/port_provision/50g_cr_fec_cl74_autoneg_off_lanes_2_count_2.yml
-
-#- include: playbooks/port_provision/50g_cr_fec_none_autoneg_off_lanes_2_count_2.yml
-
-- include: playbooks/port_provision/master/100g_cr_fec_cl91_autoneg_off.yml
-
-#- include: playbooks/port_provision/master/100g_cr_fec_cl91_autoneg_on.yml
-
-- include: playbooks/port_provision/master/10g_cr_fec_cl74_autoneg_off_lanes_1_count_4.yml
-
-#- include: playbooks/port_provision/master/10g_cr_fec_cl74_autoneg_on_lanes_1_count_4.yml
-
-- include: playbooks/port_provision/master/10g_cr_fec_none_autoneg_off_lanes_1_count_4.yml
-
-#- include: playbooks/port_provision/master/10g_cr_fec_none_autoneg_on_lanes_1_count_4.yml
-
-#- include: playbooks/port_provision/master/25g_cr_fec_cl74_autoneg_off_lane_1_count_4.yml
-
-#- include: playbooks/port_provision/master/25g_cr_fec_none_autoneg_off_lane_1_count_4.yml
-
-#- include: playbooks/port_provision/master/40g_cr_fec_cl74_autoneg_off_lanes_2_count_2.yml
-
-- include: playbooks/port_provision/master/40g_cr_fec_cl74_autoneg_off_lanes_4_count_1.yml
-
-#- include: playbooks/port_provision/master/40g_cr_fec_cl74_autoneg_on_lanes_4_count_1.yml
-
-#- include: playbooks/port_provision/master/40g_cr_fec_none_autoneg_off_lanes_2_count_2.yml
-
-- include: playbooks/port_provision/master/40g_cr_fec_none_autoneg_off_lanes_4_count_1.yml
-
-#- include: playbooks/port_provision/master/40g_cr_fec_none_autoneg_on_lanes_4_count_1.yml
-
-- include: playbooks/port_provision/master/50g_cr_fec_cl74_autoneg_off_lanes_2_count_2.yml
-
-#- include: playbooks/port_provision/master/50g_cr_fec_none_autoneg_off_lanes_2_count_2.yml
+- include: playbooks/ospf/bird_ospf_routes.yml
 
 
 - hosts: server_emulator
