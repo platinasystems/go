@@ -55,12 +55,15 @@
 - hosts: server_emulator
   become: true
   tasks:
-    - shell: cat "{{ regression_summary_report }}"
+    - name: Get the summary report
+      shell: cat "{{ regression_summary_report }}"
       register: summary_report
 
-    - debug:
+    - name: Print summary report
+      debug:
         var: summary_report.stdout_lines
 
-    - fail:
+    - name: Check summary report for failure
+      fail:
         msg: "Weekly Regression Failed"
       when: summary_report.stdout.find('Failed') != -1
