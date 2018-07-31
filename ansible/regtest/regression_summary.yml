@@ -1,0 +1,59 @@
+---
+
+- hosts: leaf:spine
+  become: true
+  ignore_errors: yes
+  gather_facts: no
+  tasks:
+    - name: Get GoES version details
+      shell: "goes hget {{ platina_redis_channel }} package | grep version:"
+      register: goes_version
+
+    - name: Print GoES version details
+      debug:
+        var: goes_version.stdout_lines
+
+    - name: Get GoES tag details
+      shell: "goes hget {{ platina_redis_channel }} package | grep tag:"
+      register: goes_tags
+
+    - name: Print GoES tag details
+      debug:
+        var: goes_tags.stdout_lines
+
+    - name: Get kernel version info
+      shell: dpkg --list | grep kernel
+      register: kernel_version
+
+    - name: Print kernel version info
+      debug:
+        var: kernel_version.stdout_lines
+
+
+- hosts: server_emulator
+  become: true
+  gather_facts: no
+  tasks:
+    - name: Get the regression summary report
+      shell: cat "{{ regression_summary_report }}"
+      register: summary_report
+
+    - name: Print the regression summary report
+      debug:
+        var: summary_report.stdout_lines
+
+    - name: Get failure summary of Failed test cases
+      get_failure_summary:
+        summary_report_file: "{{ lookup('file', '{{ regression_summary_report }}') }}"
+      register: failure_summary
+      when: summary_report.stdout.find('Failed') != -1
+
+    - name: Print failure summary of Failed test cases
+      debug:
+        var: failure_summary.stdout_lines
+      when: summary_report.stdout.find('Failed') != -1
+
+    - name: Check summary report for failures
+      fail:
+        msg: "Regression Failed"
+      when: summary_report.stdout.find('Failed') != -1
