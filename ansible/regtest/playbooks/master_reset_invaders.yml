@@ -16,14 +16,17 @@
       - "docker stop $(docker ps -a -q)"
       - "docker rm $(docker ps -a -q)"
 
-    - name: Reset invaders
-      reset_invaders:
-        switch_name: "{{ inventory_hostname }}"
-        leaf_list: "{{ groups['leaf'] }}"
-        spine_list: "{{ groups['spine'] }}"
-        leaf_eth_ips_last_octet: "29,30"
-        spine_eth_ips_last_octet: "31,32"
-        platina_redis_channel: "{{ platina_redis_channel }}"
+    - name: Copy default network interfaces file
+      copy:
+        src: "../files/{{inventory_hostname}}/network_interfaces_master"
+        dest: "{{ network_interfaces_file }}"
 
-    - name: Restart GOES
-      command: goes restart
+    - name: Execute commands
+      command: "{{ item }}"
+      with_items:
+      - 'goes stop'
+      - 'rmmod platina-mk1'
+      - 'modprobe platina-mk1'
+      - 'ifdown -a --allow vnet'
+      - 'ifup -a'
+      - 'goes start'
