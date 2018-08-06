@@ -31,6 +31,22 @@
         name: lldpd
         state: present
 
+    - name: Take backup of /etc/lldpd.d/xeth.conf
+      copy:
+        src: "{{ xeth_config_file }}"
+        dest: "{{ xeth_config_file_bck }}"
+        remote_src: true
+
+    - name: Copy default /etc/lldpd.d/xeth.conf file
+      copy:
+        src: "../../files/{{inventory_hostname}}/xeth_conf"
+        dest: "{{ xeth_config_file }}"
+
+    - name: Restart lldp service
+      service:
+        name: lldpd
+        state: restarted
+
 
 - hosts: leaf[0]:spine
   become: yes
@@ -109,8 +125,26 @@
   tasks:
     - include: ../../playbooks/get_goes_version_and_tags.yml
 
-    - name: Restart goes
-      command: goes restart
+    - name: Restore backup of /etc/lldpd.d/xeth.conf
+      copy:
+        src: "{{ xeth_config_file_bck }}"
+        dest: "{{ xeth_config_file }}"
+        remote_src: true
+
+    - name: Reset setup configs
+      command: "{{ item }}"
+      with_items:
+      - 'goes stop'
+      - 'rmmod platina-mk1'
+      - 'modprobe platina-mk1'
+      - 'ifdown -a --allow vnet'
+      - 'ifup -a'
+      - 'goes start'
+
+    - name: Remove backup file
+      file:
+        path: "{{ xeth_config_file_bck }}"
+        state: absent
 
 
 - hosts: server_emulator
@@ -137,5 +171,9 @@
 - hosts: leaf:spine
   become: true
   tasks:
+    - name: Wait few seconds for vnetd to come up
+      pause:
+        seconds: 2
+
     - include: ../../playbooks/get_goes_status.yml
 
