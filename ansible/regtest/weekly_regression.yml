@@ -41,15 +41,15 @@
 
 
 # Run all port provision test cases
-#- include: port_provision_main.yml
+- include: port_provision_main.yml
 
 
 # Run all docker test cases
-#- include: docker_main.yml
+- include: docker_main.yml
 
 
 # Run all vlan test cases
-#- include: vlan_main.yml
+- include: vlan_main.yml
 
 
 - hosts: server_emulator
