@@ -283,8 +283,8 @@ def verify_vlan_configurations(module):
             lldp_out = execute_commands(module, cmd)
 
             if lldp_out:
-                if ('vlan name: eth-{}-1.1'.format(eth) not in lldp_out or
-                        'vlan id (VID): {}'.format(eth) not in lldp_out):
+                if ('802.1Q (0x8100)' not in lldp_out or
+                        'vlan {}'.format(eth) not in lldp_out):
                     RESULT_STATUS = False
                     failure_summary += 'On switch {} '.format(switch_name)
                     failure_summary += 'there are no vlan tagged packets '

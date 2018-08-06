@@ -46,6 +46,9 @@ bird_conf_file_bck: /etc/bird/bird.conf.bck
 network_interfaces_file: /etc/network/interfaces
 network_interfaces_file_bck: /etc/network/interfaces.bck
 
+xeth_config_file: /etc/lldpd.d/xeth.conf
+xeth_config_file_bck: /etc/lldpd.d/xeth_conf.bck
+
 goes_start_file: /etc/goes/start
 goes_start_file_bck: /etc/goes/start.bck
 
