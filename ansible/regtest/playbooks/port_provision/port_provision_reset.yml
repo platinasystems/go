@@ -1,28 +1,32 @@
 ---
 
-- hosts: leaf[0]:spine[0]
+- hosts: leaf:spine
   become: true
   ignore_errors: yes
   tasks:
-    - name: Stop iperf server instances
-      command: "pkill iperf"
+    - name: Delete any existing namespaces
+      command: ip -all netns del
 
-    - shell: "rm ~/iperf-parallel-servers.sh"
+    - name: Stop any existing iperf sessions
+      command: pkill iperf
 
-    - name: Restore backup of /etc/goes/start
+    - name: Stop and remove any existing docker containers
+      shell: "{{ item }}"
+      with_items:
+      - "docker stop $(docker ps -a -q)"
+      - "docker rm $(docker ps -a -q)"
+
+    - name: Copy default network interfaces file
       copy:
-        src: "{{ goes_start_file_bck }}"
-        dest: "{{ goes_start_file }}"
-        remote_src: true
+        src: "../../files/{{inventory_hostname}}/network_interfaces_master"
+        dest: "{{ network_interfaces_file }}"
 
-    - name: Remove backup file
-      file:
-        path: "{{ goes_start_file_bck }}"
-        state: absent
-
-    - name: Remove portprovision file
-      file:
-        path: /etc/goes/portprovision
-        state: absent
-
-    - command: "goes restart"
+    - name: Execute commands
+      command: "{{ item }}"
+      with_items:
+      - 'goes stop'
+      - 'rmmod platina-mk1'
+      - 'modprobe platina-mk1'
+      - 'ifdown -a --allow vnet'
+      - 'ifup -a'
+      - 'goes start'

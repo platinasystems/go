@@ -4,8 +4,8 @@
 - include: playbooks/installation/uninstall_packages.yml
 
 
-# Restart goes
-- include: playbooks/goes_restart.yml
+# Reset invaders
+- include: playbooks/master_reset_invaders.yml
 
 
 # Run all vlan test cases

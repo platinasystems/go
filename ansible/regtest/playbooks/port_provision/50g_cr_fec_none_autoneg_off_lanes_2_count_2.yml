@@ -23,42 +23,28 @@
         start_time: "{{ start_time.stdout }}"
 
 
-- hosts: leaf[0]:spine[0]
+- hosts: leaf:spine
   become: true
   tasks:
     - file:
         path: "{{ port_provision_log_dir }}"
         state: directory
 
-    - name: Take backup of /etc/goes/start file
-      copy:
-        src: "{{ goes_start_file }}"
-        dest: "{{ goes_start_file_bck }}"
-        remote_src: true
-
-    - name: Copy updated start file for this testcase
-      template:
-        src: ../../templates/50g_cr_fec_none_autoneg_off_lanes_2_count_2_start_file
-        dest: /etc/goes/start
-
-    - name: Copy portprovision file for this testcase
-      copy:
-        src: ../../templates/50g_cr_lanes_2_count_2_portprovision
-        dest: /etc/goes/portprovision
-
-    - name: Restart goes
-      command: "goes restart"
-
-    - name: Verify media, speed and fec values
-      test_port_links:
+    - name: Update the setup configs and verify
+      set_configs:
         switch_name: "{{ inventory_hostname }}"
-        eth_list: "1,3,5,7,9,11,13,15"
+        leaf_list: "{{ groups['leaf'] }}"
+        spine_list: "{{ groups['spine'] }}"
+        eth_list: "1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31"
         speed: "50g"
         media: "copper"
         fec: "none"
-        two_lanes: True
+        autoneg: "off"
+        leaf_eth_ips_last_octet: "29,30"
+        spine_eth_ips_last_octet: "31,32"
         platina_redis_channel: "{{ platina_redis_channel }}"
-        leaf_server: "{{ groups['leaf'][0] }}"
+        is_subports: True
+        is_lane2_count2: True
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
         log_dir_path: "{{ port_provision_log_dir }}"
       register: module_out
@@ -80,22 +66,56 @@
         log_content: "{{ logs['content'] | b64decode }}"
       delegate_to: 127.0.0.1
 
-    - name: Copy iperf parallel server shell script
-      copy:
-        src: ../../files/iperf-parallel-servers
-        dest: ~/iperf-parallel-servers.sh
-        mode: 0755
 
-    - name: Start iperf server instances
-      shell: "~/iperf-parallel-servers.sh 16 server-report"
+- hosts: spine
+  become: true
+  tasks:
+    - name: Initiate iperf servers
+      shell: "iperf -s &"
 
+
+- hosts: leaf[0]
+  become: true
+  tasks:
     - name: Initiate iperf client and verify traffic
-      verify_iperf_traffic:
+      verify_iperf_traffic_master:
         switch_name: "{{ inventory_hostname }}"
-        leaf_server: "{{ groups['leaf'][0] }}"
-        eth_list: "1,3,5,7,9,11,13,15"
+        eth_ips_last_octet: "31,32"
+        eth_list: "1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31"
         is_subports: True
-        two_lanes: True
+        is_lane2_count2: True
+        hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
+        log_dir_path: "{{ port_provision_log_dir }}"
+      register: module_out
+
+    - command: "date +%Y%m%d%T"
+      register: end_time
+
+    - name: Fetch the log file
+      slurp:
+        src: "{{ module_out.log_file_path }}"
+      register: logs
+
+    - name: Store the test result in a hash in redis db on server emulator
+      store_result_in_redis:
+        hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
+        start_time: "{{ hostvars['server_emulator']['start_time'] }}"
+        end_time: "{{ end_time.stdout }}"
+        hash_dict: "{{ module_out.hash_dict }}"
+        log_content: "{{ logs['content'] | b64decode }}"
+      delegate_to: 127.0.0.1
+
+
+- hosts: leaf[1]
+  become: true
+  tasks:
+    - name: Initiate iperf client and verify traffic
+      verify_iperf_traffic_master:
+        switch_name: "{{ inventory_hostname }}"
+        eth_ips_last_octet: "32,31"
+        eth_list: "1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31"
+        is_subports: True
+        is_lane2_count2: True
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
         log_dir_path: "{{ port_provision_log_dir }}"
       register: module_out
