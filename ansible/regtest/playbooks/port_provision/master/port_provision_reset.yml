@@ -18,7 +18,7 @@
 
     - name: Copy default network interfaces file
       copy:
-        src: "../files/{{inventory_hostname}}/network_interfaces_master"
+        src: "../../files/{{inventory_hostname}}/network_interfaces_master"
         dest: "{{ network_interfaces_file }}"
 
     - name: Execute commands
