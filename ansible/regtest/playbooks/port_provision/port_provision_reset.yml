@@ -10,12 +10,6 @@
     - name: Stop any existing iperf sessions
       command: pkill iperf
 
-    - name: Stop and remove any existing docker containers
-      shell: "{{ item }}"
-      with_items:
-      - "docker stop $(docker ps -a -q)"
-      - "docker rm $(docker ps -a -q)"
-
     - name: Copy default network interfaces file
       copy:
         src: "../../files/{{inventory_hostname}}/network_interfaces_master"
@@ -30,3 +24,8 @@
       - 'ifdown -a --allow vnet'
       - 'ifup -a'
       - 'goes start'
+
+    - name: Wait few seconds for GOES to come up
+      pause:
+        seconds: 5
+
