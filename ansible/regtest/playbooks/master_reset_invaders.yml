@@ -30,3 +30,22 @@
       - 'ifdown -a --allow vnet'
       - 'ifup -a'
       - 'goes start'
+
+    - name: Wait few seconds for GOES to come up
+      pause:
+        seconds: 15
+
+    - include: get_goes_status.yml
+
+    - name: Verify link status b/w invaders
+      verify_links:
+        switch_name: "{{ inventory_hostname }}"
+        leaf_list: "{{ groups['leaf'] }}"
+        eth_list: "1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31"
+        platina_redis_channel: "{{ platina_redis_channel }}"
+      register: module_out
+
+    - name: Print Link Status
+      debug:
+        var: module_out
+
