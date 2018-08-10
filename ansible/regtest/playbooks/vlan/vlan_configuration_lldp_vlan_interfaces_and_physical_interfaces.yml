@@ -147,6 +147,10 @@
         state: absent
 
 
+- include: ../../playbooks/master_reset_invaders.yml
+  when: reset_config
+
+
 - hosts: server_emulator
   become: true
   tasks:

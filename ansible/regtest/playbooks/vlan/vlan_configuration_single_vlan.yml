@@ -23,7 +23,7 @@
         start_time: "{{ start_time.stdout }}"
 
 
-- hosts: leaf[0]:spine
+- hosts: leaf[0]:spine[1]
   become: yes
   tasks:
     - file:
@@ -58,48 +58,14 @@
       delegate_to: 127.0.0.1
 
 
-- hosts: leaf[1]:spine
-  become: yes
-  tasks:
-    - file:
-        path: "{{ vlan_log_dir }}"
-        state: directory
-
-    - name: Test vlan configuration single vlan
-      test_vlan_configuration:
-        switch_name: "{{ inventory_hostname }}"
-        leaf_switch: "{{ groups['leaf'][1] }}"
-        spine_list: "{{ groups['spine'] }}"
-        eth_list: "19,5"
-        hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
-        log_dir_path: "{{ vlan_log_dir }}"
-      register: module_out
-
-    - command: "date +%Y%m%d%T"
-      register: end_time
-
-    - name: Fetch the log file
-      slurp:
-        src: "{{ module_out.log_file_path }}"
-      register: logs
-
-    - name: Store the test result in a hash in redis db on server emulator
-      store_result_in_redis:
-        hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
-        start_time: "{{ hostvars['server_emulator']['start_time'] }}"
-        end_time: "{{ end_time.stdout }}"
-        hash_dict: "{{ module_out.hash_dict }}"
-        log_content: "{{ logs['content'] | b64decode }}"
-      delegate_to: 127.0.0.1
-
-
 - hosts: leaf:spine
   become: yes
   tasks:
     - include: ../../playbooks/get_goes_version_and_tags.yml
 
-    - name: Restart goes
-      command: goes restart
+
+- include: ../../playbooks/master_reset_invaders.yml
+  when: reset_config
 
 
 - hosts: server_emulator
