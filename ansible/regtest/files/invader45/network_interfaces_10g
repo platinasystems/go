@@ -1,0 +1,442 @@
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+source /etc/network/interfaces.d/*
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+allow-hotplug eth0
+#iface eth0 inet dhcp
+
+auto eth0
+iface eth0 inet static
+  address 172.17.2.45
+  netmask 255.255.254.0
+  gateway 172.17.2.1
+  dns-nameservers 8.8.8.8 8.8.4.4
+
+allow-vnet eth-1-1
+auto eth-1-1
+iface eth-1-1 inet static
+    address 10.1.1.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 10000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-1-1
+
+allow-vnet eth-1-2
+auto eth-1-2
+iface eth-1-2 inet static
+    address 10.1.2.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 10000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-1-2
+
+allow-vnet eth-1-3
+auto eth-1-3
+iface eth-1-3 inet static
+    address 10.1.3.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 10000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-1-3
+
+allow-vnet eth-1-4
+auto eth-1-4
+iface eth-1-4 inet static
+    address 10.1.4.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 10000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-1-4
+
+auto eth-2-1
+iface eth-2-1 inet static
+    address 10.0.2.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-2-1
+
+auto eth-3-1
+iface eth-3-1 inet static
+    address 10.0.3.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-3-1
+
+auto eth-4-1
+iface eth-4-1 inet static
+    address 10.0.4.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-4-1
+
+auto eth-5-1
+iface eth-5-1 inet static
+    address 10.0.5.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-5-1
+
+auto eth-6-1
+iface eth-6-1 inet static
+    address 10.0.6.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-6-1
+
+auto eth-7-1
+iface eth-7-1 inet static
+    address 10.0.7.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-7-1
+
+auto eth-8-1
+iface eth-8-1 inet static
+    address 10.0.8.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-8-1
+
+auto eth-9-1
+iface eth-9-1 inet static
+    address 10.0.9.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-9-1
+
+auto eth-10-1
+iface eth-10-1 inet static
+    address 10.0.10.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-10-1
+
+auto eth-11-1
+iface eth-11-1 inet static
+    address 10.0.11.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-11-1
+
+auto eth-12-1
+iface eth-12-1 inet static
+    address 10.0.12.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-12-1
+
+auto eth-13-1
+iface eth-13-1 inet static
+    address 10.0.13.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-13-1
+
+auto eth-14-1
+iface eth-14-1 inet static
+    address 10.0.14.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-14-1
+
+auto eth-15-1
+iface eth-15-1 inet static
+    address 10.0.15.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-15-1
+
+auto eth-16-1
+iface eth-16-1 inet static
+    address 10.0.16.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-16-1
+
+auto eth-17-1
+iface eth-17-1 inet static
+    address 10.0.17.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-17-1
+
+auto eth-18-1
+iface eth-18-1 inet static
+    address 10.0.18.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-18-1
+
+auto eth-19-1
+iface eth-19-1 inet static
+    address 10.0.19.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-19-1
+
+auto eth-20-1
+iface eth-20-1 inet static
+    address 10.0.20.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-20-1
+
+auto eth-21-1
+iface eth-21-1 inet static
+    address 10.21.1.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 10000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-21-1
+
+auto eth-21-2
+iface eth-21-2 inet static
+    address 10.21.2.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 10000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-21-2
+
+auto eth-21-3
+iface eth-21-3 inet static
+    address 10.21.3.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 10000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-21-3
+
+auto eth-21-4
+iface eth-21-4 inet static
+    address 10.21.4.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 10000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-21-4
+
+auto eth-22-1
+iface eth-22-1 inet static
+    address 10.0.22.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-22-1
+
+auto eth-23-1
+iface eth-23-1 inet static
+    address 10.0.23.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-23-1
+
+auto eth-24-1
+iface eth-24-1 inet static
+    address 10.0.24.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-24-1
+
+auto eth-25-1
+iface eth-25-1 inet static
+    address 10.0.25.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-25-1
+
+auto eth-26-1
+iface eth-26-1 inet static
+    address 10.0.26.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-26-1
+
+auto eth-27-1
+iface eth-27-1 inet static
+    address 10.0.27.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-27-1
+
+auto eth-28-1
+iface eth-28-1 inet static
+    address 10.0.28.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-28-1
+
+auto eth-29-1
+iface eth-29-1 inet static
+    address 10.0.29.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-29-1
+
+auto eth-30-1
+iface eth-30-1 inet static
+    address 10.0.30.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-30-1
+
+auto eth-31-1
+iface eth-31-1 inet static
+    address 10.0.31.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-31-1
+
+auto eth-32-1
+iface eth-32-1 inet static
+    address 10.0.32.29
+    netmask 255.255.255.0
+pre-up ip link add $IFACE type xeth
+pre-up ip link set $IFACE up
+pre-up ethtool -s $IFACE speed 100000 autoneg off
+post-down ip link set $IFACE down
+post-down ip link del $IFACE type xeth
+allow-vnet eth-32-1
+

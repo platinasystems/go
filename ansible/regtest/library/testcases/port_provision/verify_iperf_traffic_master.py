@@ -152,23 +152,9 @@ def verify_traffic(module):
     else:
         subport = '1'
 
-    for i in range(len(eth_list)/2):
-        eth = eth_list[i]
-        last_octet = eth_ips_last_octet[0]
-        for port in subport:
-            cmd = 'iperf -c 10.{}.{}.{} -t 2 -P 1'.format(eth, port, last_octet)
-            traffic_out = execute_commands(module, cmd)
-
-            if ('Transfer' not in traffic_out and 'Bandwidth' not in traffic_out and
-                    'Bytes' not in traffic_out and 'bits/sec' not in traffic_out):
-                RESULT_STATUS = False
-                failure_summary += 'On switch {} '.format(switch_name)
-                failure_summary += 'iperf traffic cannot be verified for '
-                failure_summary += 'eth-{}-{} using command {}\n'.format(eth, port, cmd)
-
-    for i in range(8, len(eth_list)):
-        eth = eth_list[i]
-        last_octet = eth_ips_last_octet[1]
+    for eth in eth_list:
+        ind = eth_list.index(eth)
+        last_octet = eth_ips_last_octet[ind]
         for port in subport:
             cmd = 'iperf -c 10.{}.{}.{} -t 2 -P 1'.format(eth, port, last_octet)
             traffic_out = execute_commands(module, cmd)
@@ -207,7 +193,7 @@ def main():
             is_subports=dict(required=False, type='bool', default=False),
             is_lane2_count2=dict(required=False, type='bool', default=False),
             hash_name=dict(required=False, type='str'),
-            log_dir_path=dict(required=False, type='str'),
+            log_dir_path=dict(required=False, type='str')
         )
     )
 
@@ -241,4 +227,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 

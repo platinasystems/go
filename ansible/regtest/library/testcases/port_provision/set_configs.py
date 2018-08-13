@@ -38,24 +38,11 @@ options:
         - Name of the switch on which tests will be performed.
       required: False
       type: str
-    leaf_list:
+    config_file:
       description:
-        - List of all leaf switches.
-      required: False
-      type: list
-      default: []
-    spine_list:
-      description:
-        - List of all spine switches.
-      required: False
-      type: list
-      default: []
-    eth_list:
-      description:
-        - List of eth interfaces described as string.
+        - Config details of interfaces that are to be provisioned.
       required: False
       type: str
-      default: ''
     speed:
       description:
         - Speed of the eth interface port.
@@ -76,18 +63,6 @@ options:
         - autoneg of the eth interface port.
       required: False
       type: str
-    leaf_eth_ips_last_octet:
-      description:
-        - Last octets of IP address of interfaces of leaf switch.
-      required: False
-      type: str
-      default: ''
-    spine_eth_ips_last_octet:
-      description:
-        - Last octets of IP address of interfaces of spine switch.
-      required: False
-      type: str
-      default: ''
     platina_redis_channel:
       description:
         - Name of the platina redis channel.
@@ -188,25 +163,18 @@ def set_switch(module):
     """
     global RESULT_STATUS, HASH_DICT
     failure_summary = ''
-    switch_name = module.params['switch_name']
-    spine_list = module.params['spine_list']
-    leaf_list = module.params['leaf_list']
-    speed = module.params['speed']
     fec = module.params['fec']
-    autoneg = module.params['autoneg']
     platina_redis_channel = module.params['platina_redis_channel']
     is_subports = module.params['is_subports']
     is_lane2_count2 = module.params['is_lane2_count2']
-    eth_list = module.params['eth_list'].split(',')
-    leaf_eth_ips_last_octet = module.params['leaf_eth_ips_last_octet'].split(',')
-    spine_eth_ips_last_octet = module.params['spine_eth_ips_last_octet'].split(',')
+    config_file = module.params['config_file'].splitlines()
+    media = module.params['media']
 
-    if switch_name in spine_list:
-        indx = spine_list.index(switch_name)
-        last_octet = spine_eth_ips_last_octet[indx]
-    else:
-        indx = leaf_list.index(switch_name)
-        last_octet = leaf_eth_ips_last_octet[indx]
+    eth_list = []
+
+    for line in config_file:
+        eth = line.split()[1]
+        eth_list.append(eth)
 
     if is_subports:
         if not is_lane2_count2:
@@ -216,32 +184,15 @@ def set_switch(module):
     else:
         subport = '1'
 
-    execute_commands(module, 'goes stop')
-    execute_commands(module, 'rmmod platina-mk1')
-    execute_commands(module, 'modprobe platina-mk1')
-
     for eth in eth_list:
         for port in subport:
-            cmd = 'ip link add eth-{}-{} type {}'.format(eth, port, platina_redis_channel)
-            run_cli(module, cmd)
-
-            cmd = 'ip link set eth-{}-{} up'.format(eth, port)
-            run_cli(module, cmd)
-
-            cmd = 'ethtool -s eth-{}-{} speed {}000 autoneg {}'.format(eth, port, speed[:-1], autoneg)
-            run_cli(module, cmd)
-
-            cmd = 'ifconfig eth-{}-{} 10.{}.{}.{}/24'.format(eth, port, eth, port, last_octet)
-            run_cli(module, cmd)
-
-    execute_commands(module, 'goes start')
-
-    for eth in eth_list:
-        for port in subport:
-            time.sleep(1)
             cmd = 'goes hset {} vnet.eth-{}-{}.fec {}'.format(platina_redis_channel, eth, port, fec)
-            run_cli(module, cmd)
+            execute_commands(module, cmd)
 
+            cmd = 'goes hset {} vnet.eth-{}-{}.media {}'.format(platina_redis_channel, eth, port, media)
+            execute_commands(module, cmd)
+
+    time.sleep(10)
     # Verify port link
     failure_summary += verify_port_links(module)
 
@@ -266,7 +217,13 @@ def verify_port_links(module):
     platina_redis_channel = module.params['platina_redis_channel']
     is_subports = module.params['is_subports']
     is_lane2_count2 = module.params['is_lane2_count2']
-    eth_list = module.params['eth_list'].split(',')
+    config_file = module.params['config_file'].splitlines()
+
+    eth_list = []
+
+    for line in config_file:
+        eth = line.split()[1]
+        eth_list.append(eth)
 
     if is_subports:
         if not is_lane2_count2:
@@ -280,7 +237,7 @@ def verify_port_links(module):
     for eth in eth_list:
         for port in subport:
             cmd = 'goes hget {} vnet.eth-{}-{}.link'.format(platina_redis_channel, eth, port)
-            out = run_cli(module, cmd)
+            out = execute_commands(module, cmd)
             if 'true' not in out:
                 RESULT_STATUS = False
                 failure_summary += 'On switch {} '.format(switch_name)
@@ -291,7 +248,7 @@ def verify_port_links(module):
     for eth in eth_list:
         for port in subport:
             cmd = 'goes hget {} vnet.eth-{}-{}.media'.format(platina_redis_channel, eth, port)
-            out = run_cli(module, cmd)
+            out = execute_commands(module, cmd)
             if media not in out:
                 RESULT_STATUS = False
                 failure_summary += 'On switch {} '.format(switch_name)
@@ -302,7 +259,7 @@ def verify_port_links(module):
     for eth in eth_list:
         for port in subport:
             cmd = 'goes hget {} vnet.eth-{}-{}.fec'.format(platina_redis_channel, eth, port)
-            out = run_cli(module, cmd)
+            out = execute_commands(module, cmd)
             if fec not in out:
                 RESULT_STATUS = False
                 failure_summary += 'On switch {} '.format(switch_name)
@@ -316,7 +273,7 @@ def verify_port_links(module):
     for eth in eth_list:
         for port in subport:
             cmd = 'goes hget {} vnet.eth-{}-{}.speed'.format(platina_redis_channel, eth, port)
-            out = run_cli(module, cmd)
+            out = execute_commands(module, cmd)
             if speed not in out:
                 RESULT_STATUS = False
                 failure_summary += 'On switch {} '.format(switch_name)
@@ -324,7 +281,6 @@ def verify_port_links(module):
                 failure_summary += 'is not set to {} for '.format(speed)
                 failure_summary += 'the interface eth-{}-{}\n'.format(eth, port)
 
-    time.sleep(40)
     return failure_summary
 
 
@@ -333,15 +289,11 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             switch_name=dict(required=False, type='str'),
-            spine_list=dict(required=False, type='list', default=[]),
-            leaf_list=dict(required=False, type='list', default=[]),
-            eth_list=dict(required=False, type='str', default=''),
+            config_file=dict(required=False, type='str'),
             speed=dict(required=False, type='str'),
             media=dict(required=False, type='str'),
             fec=dict(required=False, type='str', default=''),
             autoneg=dict(required=False, type='str', default=''),
-            leaf_eth_ips_last_octet=dict(required=False, type='str', default=''),
-            spine_eth_ips_last_octet=dict(required=False, type='str', default=''),
             platina_redis_channel=dict(required=False, type='str'),
             is_subports=dict(required=False, type='bool', default=False),
             is_lane2_count2=dict(required=False, type='bool', default=False),
@@ -379,4 +331,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
