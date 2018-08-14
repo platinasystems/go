@@ -30,21 +30,36 @@
         path: "{{ port_provision_log_dir }}"
         state: directory
 
+    - name: Copy provisioned network interfaces file
+      copy:
+        src: "../../files/{{inventory_hostname}}/network_interfaces_50g"
+        dest: "{{ network_interfaces_file }}"
+
+    - name: Execute commands
+      command: "{{ item }}"
+      with_items:
+      - 'goes stop'
+      - 'rmmod platina-mk1'
+      - 'modprobe platina-mk1'
+      - 'ifdown -a --allow vnet'
+      - 'ifup -a'
+      - 'goes start'
+
+    - name: Wait few seconds for GOES to come up
+      pause:
+        seconds: 10
+
     - name: Update the setup configs and verify
       set_configs:
         switch_name: "{{ inventory_hostname }}"
-        leaf_list: "{{ groups['leaf'] }}"
-        spine_list: "{{ groups['spine'] }}"
-        eth_list: "1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31"
+        config_file: "{{ lookup('file', '../../group_vars/{{ inventory_hostname }}/interfaces_port_provision') }}"
         speed: "50g"
         media: "copper"
         fec: "cl74"
         autoneg: "off"
-        leaf_eth_ips_last_octet: "29,30"
-        spine_eth_ips_last_octet: "31,32"
-        platina_redis_channel: "{{ platina_redis_channel }}"
         is_subports: True
         is_lane2_count2: True
+        platina_redis_channel: "{{ platina_redis_channel }}"
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
         log_dir_path: "{{ port_provision_log_dir }}"
       register: module_out
@@ -81,7 +96,7 @@
       verify_iperf_traffic_master:
         switch_name: "{{ inventory_hostname }}"
         eth_ips_last_octet: "31,32"
-        eth_list: "1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31"
+        eth_list: "1,21"
         is_subports: True
         is_lane2_count2: True
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
@@ -113,7 +128,7 @@
       verify_iperf_traffic_master:
         switch_name: "{{ inventory_hostname }}"
         eth_ips_last_octet: "32,31"
-        eth_list: "1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31"
+        eth_list: "3,19"
         is_subports: True
         is_lane2_count2: True
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
@@ -169,3 +184,4 @@
   become: true
   tasks:
     - include: ../../playbooks/get_goes_status.yml
+
