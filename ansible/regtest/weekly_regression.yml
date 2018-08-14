@@ -30,7 +30,7 @@
 
 
 # Run all port provision test cases
-#- include: port_provision_main.yml
+- include: port_provision_main.yml
 
 
 # Run all docker test cases
