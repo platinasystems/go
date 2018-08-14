@@ -155,8 +155,19 @@ def verify_traffic(module):
     for eth in eth_list:
         ind = eth_list.index(eth)
         last_octet = eth_ips_last_octet[ind]
-        for port in subport:
-            cmd = 'iperf -c 10.{}.{}.{} -t 2 -P 1'.format(eth, port, last_octet)
+        if is_subports:
+            for port in subport:
+                cmd = 'iperf -c 10.{}.{}.{} -t 2 -P 1'.format(eth, port, last_octet)
+                traffic_out = execute_commands(module, cmd)
+
+                if ('Transfer' not in traffic_out and 'Bandwidth' not in traffic_out and
+                        'Bytes' not in traffic_out and 'bits/sec' not in traffic_out):
+                    RESULT_STATUS = False
+                    failure_summary += 'On switch {} '.format(switch_name)
+                    failure_summary += 'iperf traffic cannot be verified for '
+                    failure_summary += 'eth-{}-{} using command {}\n'.format(eth, port, cmd)
+        else:
+            cmd = 'iperf -c 10.0.{}.{} -t 2 -P 1'.format(eth, last_octet)
             traffic_out = execute_commands(module, cmd)
 
             if ('Transfer' not in traffic_out and 'Bandwidth' not in traffic_out and
@@ -164,7 +175,7 @@ def verify_traffic(module):
                 RESULT_STATUS = False
                 failure_summary += 'On switch {} '.format(switch_name)
                 failure_summary += 'iperf traffic cannot be verified for '
-                failure_summary += 'eth-{}-{} using command {}\n'.format(eth, port, cmd)
+                failure_summary += 'eth-{}-{} using command {}\n'.format(eth, subport, cmd)
 
     for eth in eth_list:
         for port in subport:
