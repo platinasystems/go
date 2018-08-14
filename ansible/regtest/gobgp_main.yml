@@ -4,12 +4,12 @@
 - include: playbooks/installation/uninstall_packages.yml
 
 
+# Reset the setup
+- include: playbooks/master_reset_invaders.yml
+
+
 # Install gobgp
 - include: playbooks/installation/gobgp_install.yml
-
-
-# Restart goes
-- include: playbooks/goes_restart.yml
 
 
 # Run all gobgp bgp test cases

@@ -1,4 +1,5 @@
 ---
+
 - hosts: server_emulator
   become: true
   ignore_errors: yes
@@ -10,10 +11,6 @@
     - file:
         path: "{{ regression_summary_report }}"
         state: touch
-
-
-# Reset invaders to default state
-- include: playbooks/master_reset_invaders.yml
 
 
 # Run all quagga test cases
