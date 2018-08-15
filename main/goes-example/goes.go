@@ -50,6 +50,7 @@ import (
 	"github.com/platinasystems/go/goes/cmd/mkdir"
 	"github.com/platinasystems/go/goes/cmd/mknod"
 	"github.com/platinasystems/go/goes/cmd/mount"
+	"github.com/platinasystems/go/goes/cmd/nvram"
 	"github.com/platinasystems/go/goes/cmd/ping"
 	"github.com/platinasystems/go/goes/cmd/ps"
 	"github.com/platinasystems/go/goes/cmd/pwd"
@@ -129,6 +130,7 @@ var Goes = &goes.Goes{
 		"mkdir":   mkdir.Command{},
 		"mknod":   mknod.Command{},
 		"mount":   mount.Command{},
+		"nvram":   nvram.Command{},
 		"ping":    ping.Command{},
 		"ps":      ps.Command{},
 		"pwd":     pwd.Command{},
