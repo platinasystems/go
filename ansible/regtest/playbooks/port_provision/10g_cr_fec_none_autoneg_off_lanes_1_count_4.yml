@@ -47,7 +47,7 @@
 
     - name: Wait few seconds for GOES to come up
       pause:
-        seconds: 10
+        seconds: 15
 
     - name: Update the setup configs and verify
       set_configs:
