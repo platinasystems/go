@@ -45,6 +45,7 @@ import (
 	"github.com/platinasystems/go/goes/cmd/mknod"
 	"github.com/platinasystems/go/goes/cmd/mount"
 	"github.com/platinasystems/go/goes/cmd/mountd"
+	"github.com/platinasystems/go/goes/cmd/nvram"
 	"github.com/platinasystems/go/goes/cmd/ping"
 	"github.com/platinasystems/go/goes/cmd/platina/mk1/bootc"
 	"github.com/platinasystems/go/goes/cmd/ps"
@@ -120,6 +121,7 @@ var Goes = &goes.Goes{
 		"mknod":   mknod.Command{},
 		"mount":   mount.Command{},
 		"mountd":  mountd.Command(make(chan struct{})),
+		"nvram":   nvram.Command{},
 		"ping":    ping.Command{},
 		"ps":      ps.Command{},
 		"pwd":     pwd.Command{},
