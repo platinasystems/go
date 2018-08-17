@@ -15,9 +15,9 @@
 
 - include: playbooks/port_provision/10g_cr_fec_none_autoneg_off_lanes_1_count_4.yml
 
-- include: playbooks/port_provision/20g_cr_fec_cl74_autoneg_off_lanes_1_count_4.yml
+#- include: playbooks/port_provision/20g_cr_fec_cl74_autoneg_off_lanes_1_count_4.yml
 
-- include: playbooks/port_provision/20g_cr_fec_none_autoneg_off_lanes_1_count_4.yml
+#- include: playbooks/port_provision/20g_cr_fec_none_autoneg_off_lanes_1_count_4.yml
 
 - include: playbooks/port_provision/25g_cr_fec_cl74_autoneg_off_lanes_1_count_4.yml
 
