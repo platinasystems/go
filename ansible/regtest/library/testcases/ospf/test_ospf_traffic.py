@@ -212,9 +212,6 @@ def verify_ospf_traffic(module):
             failure_summary += 'From switch {}, '.format(switch_name)
             failure_summary += '{} is not getting pinged\n'.format(neighbor_switch)
 
-    # Delete the dummy interface
-    execute_commands(module, 'ip link del dummy0 type dummy')
-
     HASH_DICT['result.detail'] = failure_summary
 
     # Get the GOES status info
@@ -259,6 +256,7 @@ def main():
         hash_dict=HASH_DICT,
         log_file_path=log_file_path
     )
+
 
 if __name__ == '__main__':
     main()

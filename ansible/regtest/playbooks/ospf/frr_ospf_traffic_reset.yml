@@ -14,6 +14,9 @@
         path: "{{ frr_ospf_conf_file_bck }}"
         state: absent
 
+    - name: Delete dummy interface
+      command: "ip link del dummy0 type dummy"
+
     - name: Restore backup of /etc/network/interfaces
       copy:
         src: "{{ network_interfaces_file_bck }}"

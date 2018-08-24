@@ -213,9 +213,6 @@ def verify_ospf_load_balancing(module):
         failure_summary += 'result cannot be verified since '
         failure_summary += 'output of command {} is None'.format(cmd)
 
-    # Delete the dummy interface
-    execute_commands(module, 'ip link del dummy0 type dummy')
-
     HASH_DICT['result.detail'] = failure_summary
 
     # Get the GOES status info
@@ -261,6 +258,7 @@ def main():
         hash_dict=HASH_DICT,
         log_file_path=log_file_path
     )
+
 
 if __name__ == '__main__':
     main()
