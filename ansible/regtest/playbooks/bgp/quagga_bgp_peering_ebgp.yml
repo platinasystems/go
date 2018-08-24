@@ -69,7 +69,19 @@
         log_dir_path: "{{ bgp_log_dir }}"
         dry_run_mode: "{{ dry_run }}"
       register: module_out
+      when: dry_run
       delegate_to: 127.0.0.1
+
+    - name: Verify quagga bgp peering ebgp
+      test_bgp_authentication:
+        switch_name: "{{ inventory_hostname }}"
+        config_file: "{{ lookup('file', '../../files/{{inventory_hostname}}/bgp_peering_ebgp.conf') }}"
+        package_name: "quagga"
+        hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
+        log_dir_path: "{{ bgp_log_dir }}"
+        dry_run_mode: "{{ dry_run }}"
+      register: module_out
+      when: not dry_run
 
     - command: "date +%Y%m%d%T"
       register: end_time

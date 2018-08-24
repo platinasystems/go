@@ -2,6 +2,7 @@
 dry_run: False
 reset_config: True
 platina_redis_channel: platina-mk1
+iface_type: platina-mk1
 
 regression_summary_report: /var/log/regression/regression_summary_file
 

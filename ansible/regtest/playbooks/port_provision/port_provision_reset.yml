@@ -11,7 +11,7 @@
       command: pkill iperf
 
     - name: Copy default network interfaces file
-      copy:
+      template:
         src: "../../files/{{inventory_hostname}}/network_interfaces_master"
         dest: "{{ network_interfaces_file }}"
 

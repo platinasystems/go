@@ -30,25 +30,6 @@
         path: "{{ port_provision_log_dir }}"
         state: directory
 
-    - name: Copy provisioned network interfaces file
-      copy:
-        src: "../../files/{{inventory_hostname}}/network_interfaces_master"
-        dest: "{{ network_interfaces_file }}"
-
-    - name: Execute commands
-      command: "{{ item }}"
-      with_items:
-      - 'goes stop'
-      - 'rmmod platina-mk1'
-      - 'modprobe platina-mk1'
-      - 'ifdown -a --allow vnet'
-      - 'ifup -a'
-      - 'goes start'
-
-    - name: Wait few seconds for GOES to come up
-      pause:
-        seconds: 15
-
     - name: Update the setup configs and verify
       set_configs:
         switch_name: "{{ inventory_hostname }}"

@@ -31,7 +31,7 @@
         state: directory
 
     - name: Copy provisioned network interfaces file
-      copy:
+      template:
         src: "../../files/{{inventory_hostname}}/network_interfaces_25g"
         dest: "{{ network_interfaces_file }}"
 
