@@ -1,4 +1,5 @@
 ---
+dry_run: False
 reset_config: True
 platina_redis_channel: platina-mk1
 
