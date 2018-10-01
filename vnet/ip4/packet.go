@@ -9,6 +9,7 @@ import (
 	"github.com/platinasystems/go/vnet/ip"
 
 	"unsafe"
+	"strconv"
 )
 
 const (
@@ -64,6 +65,14 @@ func (a *Address) FromUint32(x vnet.Uint32) { *(*vnet.Uint32)(unsafe.Pointer(&a[
 func (a *Address) IsEqual(b *Address) bool  { return a.AsUint32() == b.AsUint32() }
 func (a *Address) IsZero() bool             { return a.AsUint32() == 0 }
 func (a *Address) Add(x uint64)             { vnet.ByteAdd(a[:], x) }
+func (a *Address) ToString() string{
+	bit0to7 := (int64)(a[0])
+	bit8to15 := (int64)(a[1])
+	bit16to23 := (int64)(a[2])
+	bit24to31 := (int64)(a[3])
+	ipAdd := strconv.FormatInt(bit0to7,10)+"."+strconv.FormatInt(bit8to15,10)+"."+strconv.FormatInt(bit16to23,10)+"."+strconv.FormatInt(bit24to31,10)
+	return ipAdd
+}
 
 // Compare 2 addresses for sorting.
 func (a *Address) Diff(b *Address) (v int) {
