@@ -1,0 +1,35 @@
+---
+
+- hosts: leaf:spine
+  become: true
+  ignore_errors: true
+  tasks:
+    - name: Remove any existing goes binary
+      file:
+        path: "{{ goes_installer_dir }}{{ goes_installer_name }}"
+        state: absent
+    
+    - name: Uninstall existing goes
+      command: goes uninstall
+
+    - name: Get the latest goes binary from /home/mpleso/platinabot
+      command: "python ../library/core/get_latest_goes_name.py"
+      register: goes_file_name
+      delegate_to: 127.0.0.1
+      run_once: true
+
+    - name: Copy the latest goes binary on the invader in /tmp/
+      copy:
+        src: "{{ goes_file_name.stdout }}"
+        dest: "{{ goes_installer_dir }}{{ goes_installer_name }}"
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Install goes
+      shell: "{{ goes_installer_dir }}./{{ goes_installer_name }} install"
+
+    - name: Restart goes
+      command: goes restart
+
+    - include: get_goes_status.yml

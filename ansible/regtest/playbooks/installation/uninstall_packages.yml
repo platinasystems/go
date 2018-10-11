@@ -27,7 +27,7 @@
       when: "'no such file or directory' not in bird_status.stdout|lower"
 
     - name: Check gobgp status
-      command: service gobgp status
+      command: service gobgpd status
       register: gobgp_status
 
     - include: gobgp_uninstall.yml

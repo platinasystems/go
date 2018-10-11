@@ -131,28 +131,30 @@ def main():
     for version in version_details:
         sha1.append(version.split(': ')[1])
 
-    key = '{}.version.go.sha1'.format(switch_name)
-    store_in_hash(module, hash_name, key, sha1[0])
-
-    key = '{}.version.fe1.sha1'.format(switch_name)
-    store_in_hash(module, hash_name, key, sha1[1])
-
-    key = '{}.version.firmware-fe1a.sha1'.format(switch_name)
-    store_in_hash(module, hash_name, key, sha1[2])
-
+    if len(sha1) == 3:
+        key = '{}.version.go.sha1'.format(switch_name)
+        store_in_hash(module, hash_name, key, sha1[0])
+    
+        key = '{}.version.fe1.sha1'.format(switch_name)
+        store_in_hash(module, hash_name, key, sha1[1])
+    
+        key = '{}.version.firmware-fe1a.sha1'.format(switch_name)
+        store_in_hash(module, hash_name, key, sha1[2])
+    
     tag_details = tag_details.splitlines()
     tags = []
     for tag in tag_details:
         tags.append(tag.split(': ')[1])
 
-    key = '{}.version.go.tag'.format(switch_name)
-    store_in_hash(module, hash_name, key, tags[0])
-
-    key = '{}.version.fe1.tag'.format(switch_name)
-    store_in_hash(module, hash_name, key, tags[1])
-
-    key = '{}.version.firmware-fe1a.tag'.format(switch_name)
-    store_in_hash(module, hash_name, key, tags[2])
+    if len(tags) == 3:
+        key = '{}.version.go.tag'.format(switch_name)
+        store_in_hash(module, hash_name, key, tags[0])
+    
+        key = '{}.version.fe1.tag'.format(switch_name)
+        store_in_hash(module, hash_name, key, tags[1])
+    
+        key = '{}.version.firmware-fe1a.tag'.format(switch_name)
+        store_in_hash(module, hash_name, key, tags[2])
 
     out_msg = 'Stored the test result in hash: {}'.format(hash_name)
 

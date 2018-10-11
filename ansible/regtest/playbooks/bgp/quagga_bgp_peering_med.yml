@@ -1,5 +1,16 @@
 ---
 
+- hosts: leaf:spine
+  become: true
+  ignore_errors: yes
+  tasks:
+    - shell: dpkg --list | grep kernel
+      register: kernel_version
+
+    - debug:
+        var: kernel_version.stdout_lines
+
+
 - hosts: server_emulator
   become: true
 
@@ -73,24 +84,9 @@
 
     - include: ../../playbooks/get_goes_version_and_tags.yml
 
-    - name: Restore backup of /etc/quagga/bgpd.conf
-      copy:
-        src: "{{ quagga_bgp_conf_file_bck }}"
-        dest: "{{ quagga_bgp_conf_file }}"
-        remote_src: true
 
-    - name: Remove backup file
-      file:
-        path: "{{ quagga_bgp_conf_file_bck }}"
-        state: absent
-
-    - name: Delete dummy interface
-      command: "ip link del dummy0 type dummy"
-
-    - name: Restart quagga
-      service:
-        name: quagga
-        state: restarted
+- include: quagga_bgp_peering_med_reset.yml
+  when: reset_config
 
 
 - hosts: server_emulator
@@ -108,6 +104,10 @@
     - name: Print failure summary
       debug:
         msg: "Failure summary: {{ result.result_detail }}"
+
+    - lineinfile:
+        path: "{{ regression_summary_report }}"
+        line: "{{ hash_name }}: {{ result.result_status }}"
 
 
 - hosts: leaf:spine

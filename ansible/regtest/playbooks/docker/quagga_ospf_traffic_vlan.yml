@@ -1,0 +1,289 @@
+---
+
+- include: ../../playbooks/installation/uninstall_packages.yml
+
+- include: ../../playbooks/installation/quagga_install.yml
+
+
+- hosts: leaf:spine
+  become: true
+  ignore_errors: yes
+  tasks:
+    - shell: dpkg --list | grep kernel
+      register: kernel_version
+
+    - debug:
+        var: kernel_version.stdout_lines
+
+
+- hosts: server_emulator
+  become: true
+
+  tasks:
+    - command: "date +%Y%m%d%T"
+      register: start_time
+
+    - set_fact:
+        hash_name: "docker_quagga_ospf_traffic_vlan_{{ start_time.stdout }}"
+        start_time: "{{ start_time.stdout }}"
+
+
+- hosts: leaf:spine
+  become: true
+  ignore_errors: yes
+  tasks:
+    - name: Pull quagga container image from dockerhub
+      command: "docker pull stigt/debian-quagga:latest"
+
+    - name: Install docker compose
+      shell: "curl -L https://github.com/docker/compose/releases/download/1.17.0/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose"
+
+    - name: Make docker-compose file executable
+      shell: "chmod +x /usr/local/bin/docker-compose"
+
+    - file:
+        path: "{{ docker_compose_file }}"
+        state: touch
+
+    - name: Create docker-compose file
+      lineinfile:
+        path: "{{ docker_compose_file }}"
+        line: "{{ item }}"
+      with_items:
+      - "version: '3'"
+      - "services:"
+
+    - name: Add docker_move.sh
+      copy:
+        src: ../../templates/docker_move.sh
+        dest: "~/docker_move.sh"
+        owner: root
+        group: root
+        mode: 0755
+
+
+- hosts: spine[1]
+  become: true
+  ignore_errors: yes
+  vars:
+    - containers: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12', 'T13', 'T14', 'T15', 'T16', 'T17', 'T18', 'T19', 'T20', 'T21', 'T22', 'T23', 'T24', 'T25', 'T26', 'T27', 'T28', 'T29', 'T30', 'T31', 'T32', 'T33', 'T34', 'T35', 'T36', 'T37', 'T38', 'T39', 'T40', 'T41', 'T42', 'T43', 'T44', 'T45', 'T46', 'T47', 'T48', 'T49', 'T50', 'T51', 'T52', 'T53', 'T54', 'T55', 'T56', 'T57', 'T58', 'T59', 'T60', 'T61', 'T62', 'T63', 'T64', 'T65', 'T66', 'T67', 'T68', 'T69', 'T70', 'T71', 'T72', 'T73', 'T74', 'T75', 'T76', 'T77', 'T78', 'T79', 'T80']
+
+  tasks:
+    - file:
+        path: "~/volumes/quagga/{{ item }}"
+        state: directory
+      with_items:
+      - "{{ containers }}"
+
+    - name: Copy ospfd.conf and zebra.conf in respective containers
+      include: copy_config_files.yml container={{ item }} ospfd_conf_file='vlan_ospfd.conf.j2' zebra_conf_file='vlan_zebra.conf.j2'
+      with_items:
+      - "{{ containers }}"
+
+    - name: Add container info in docker-compose file
+      include: update_docker_compose.yml container={{ item }}
+      with_items:
+      - "{{ containers }}"
+
+    - name: Run docker-compose up
+      shell: "docker-compose up -d"
+      args:
+        chdir: ~/
+
+    - name: Bring up all containers
+      docker_updown_vlan:
+        switch_name: "{{ inventory_hostname }}"
+        config_file: "{{ lookup('file', '../../group_vars/{{ inventory_hostname }}/{{ item }}') }}"
+        state: 'up'
+      with_items:
+      - "{{ containers }}"
+
+
+- hosts: spine[0]
+  become: true
+  ignore_errors: yes
+  vars:
+    - containers: ['T81', 'T82', 'T83', 'T84', 'T85', 'T86', 'T87', 'T88', 'T89', 'T90', 'T91', 'T92', 'T93', 'T94', 'T95', 'T96', 'T97', 'T98', 'T99', 'T100', 'T101', 'T102', 'T103', 'T104', 'T105', 'T106', 'T107', 'T108', 'T109', 'T110', 'T111', 'T112', 'T113', 'T114', 'T115', 'T116', 'T117', 'T118', 'T119', 'T120', 'T121', 'T122', 'T123', 'T124', 'T125', 'T126', 'T127', 'T128', 'T129', 'T130', 'T131', 'T132', 'T133', 'T134', 'T135', 'T136', 'T137', 'T138', 'T139', 'T140', 'T141', 'T142', 'T143', 'T144', 'T145', 'T146', 'T147', 'T148', 'T149', 'T150', 'T151', 'T152', 'T153', 'T154', 'T155', 'T156', 'T157', 'T158', 'T159', 'T160']
+
+  tasks:
+    - file:
+        path: "~/volumes/quagga/{{ item }}"
+        state: directory
+      with_items:
+      - "{{ containers }}"
+
+    - name: Copy ospfd.conf and zebra.conf in respective containers
+      include: copy_config_files.yml container={{ item }} ospfd_conf_file='vlan_ospfd.conf.j2' zebra_conf_file='vlan_zebra.conf.j2'
+      with_items:
+      - "{{ containers }}"
+
+    - name: Add container info in docker-compose file
+      include: update_docker_compose.yml container={{ item }}
+      with_items:
+      - "{{ containers }}"
+
+    - name: Run docker-compose up
+      shell: "docker-compose up -d"
+      args:
+        chdir: ~/
+
+    - name: Bring up all containers
+      docker_updown_vlan:
+        switch_name: "{{ inventory_hostname }}"
+        config_file: "{{ lookup('file', '../../group_vars/{{ inventory_hostname }}/{{ item }}') }}"
+        state: 'up'
+      with_items:
+      - "{{ containers }}"
+
+
+- hosts: leaf[1]
+  become: true
+  ignore_errors: yes
+  vars:
+    - containers: ['T161', 'T162', 'T163', 'T164', 'T165', 'T166', 'T167', 'T168', 'T169', 'T170', 'T171', 'T172', 'T173', 'T174', 'T175', 'T176', 'T177', 'T178', 'T179', 'T180', 'T181', 'T182', 'T183', 'T184', 'T185', 'T186', 'T187', 'T188', 'T189', 'T190', 'T191', 'T192', 'T193', 'T194', 'T195', 'T196', 'T197', 'T198', 'T199', 'T200', 'T201', 'T202', 'T203', 'T204', 'T205', 'T206', 'T207', 'T208', 'T209', 'T210', 'T211', 'T212', 'T213', 'T214', 'T215', 'T216', 'T217', 'T218', 'T219', 'T220', 'T221', 'T222', 'T223', 'T224', 'T225', 'T226', 'T227', 'T228', 'T229', 'T230', 'T231', 'T232', 'T233', 'T234', 'T235', 'T236', 'T237', 'T238', 'T239', 'T240']
+
+  tasks:
+    - file:
+        path: "~/volumes/quagga/{{ item }}"
+        state: directory
+      with_items:
+      - "{{ containers }}"
+
+    - name: Copy ospfd.conf and zebra.conf in respective containers
+      include: copy_config_files.yml container={{ item }} ospfd_conf_file='vlan_ospfd.conf.j2' zebra_conf_file='vlan_zebra.conf.j2'
+      with_items:
+      - "{{ containers }}"
+
+    - name: Add container info in docker-compose file
+      include: update_docker_compose.yml container={{ item }}
+      with_items:
+      - "{{ containers }}"
+
+    - name: Run docker-compose up
+      shell: "docker-compose up -d"
+      args:
+        chdir: ~/
+
+    - name: Bring up all containers
+      docker_updown_vlan:
+        switch_name: "{{ inventory_hostname }}"
+        config_file: "{{ lookup('file', '../../group_vars/{{ inventory_hostname }}/{{ item }}') }}"
+        state: 'up'
+      with_items:
+      - "{{ containers }}"
+
+
+- hosts: leaf[0]
+  become: true
+  ignore_errors: yes
+  vars:
+    - containers: ['T241', 'T242', 'T243', 'T244', 'T245', 'T246', 'T247', 'T248', 'T249', 'T250', 'T251', 'T252', 'T253', 'T254', 'T255', 'T256', 'T257', 'T258', 'T259', 'T260', 'T261', 'T262', 'T263', 'T264', 'T265', 'T266', 'T267', 'T268', 'T269', 'T270', 'T271', 'T272', 'T273', 'T274', 'T275', 'T276', 'T277', 'T278', 'T279', 'T280', 'T281', 'T282', 'T283', 'T284', 'T285', 'T286', 'T287', 'T288', 'T289', 'T290', 'T291', 'T292', 'T293', 'T294', 'T295', 'T296', 'T297', 'T298', 'T299', 'T300', 'T301', 'T302', 'T303', 'T304', 'T305', 'T306', 'T307', 'T308', 'T309', 'T310', 'T311', 'T312', 'T313', 'T314', 'T315', 'T316', 'T317', 'T318', 'T319', 'T320']
+
+  tasks:
+    - file:
+        path: "~/volumes/quagga/{{ item }}"
+        state: directory
+      with_items:
+      - "{{ containers }}"
+
+    - name: Copy ospfd.conf and zebra.conf in respective containers
+      include: copy_config_files.yml container={{ item }} ospfd_conf_file='vlan_ospfd.conf.j2' zebra_conf_file='vlan_zebra.conf.j2'
+      with_items:
+      - "{{ containers }}"
+
+    - name: Add container info in docker-compose file
+      include: update_docker_compose.yml container={{ item }}
+      with_items:
+      - "{{ containers }}"
+
+    - name: Run docker-compose up
+      shell: "docker-compose up -d"
+      args:
+        chdir: ~/
+
+    - name: Bring up all containers
+      docker_updown_vlan:
+        switch_name: "{{ inventory_hostname }}"
+        config_file: "{{ lookup('file', '../../group_vars/{{ inventory_hostname }}/{{ item }}') }}"
+        state: 'up'
+      with_items:
+      - "{{ containers }}"
+
+
+- hosts: spine[1]
+  become: true
+  ignore_errors: yes
+  vars:
+    - container: T1
+    - containers: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12', 'T13', 'T14', 'T15', 'T16', 'T17', 'T18', 'T19', 'T20', 'T21', 'T22', 'T23', 'T24', 'T25', 'T26', 'T27', 'T28', 'T29', 'T30', 'T31', 'T32', 'T33', 'T34', 'T35', 'T36', 'T37', 'T38', 'T39', 'T40', 'T41', 'T42', 'T43', 'T44', 'T45', 'T46', 'T47', 'T48', 'T49', 'T50', 'T51', 'T52', 'T53', 'T54', 'T55', 'T56', 'T57', 'T58', 'T59', 'T60', 'T61', 'T62', 'T63', 'T64', 'T65', 'T66', 'T67', 'T68', 'T69', 'T70', 'T71', 'T72', 'T73', 'T74', 'T75', 'T76', 'T77', 'T78', 'T79', 'T80']
+
+  tasks:
+    - file:
+        path: "{{ docker_log_dir }}"
+        state: directory
+
+    - include_vars:
+        file: ../../group_vars/{{ inventory_hostname }}/{{ container }}
+
+    - name: Verify quagga ospf traffic inside T1 container
+      test_docker_ospf:
+        switch_name: "{{ inventory_hostname }}"
+        container: "{{ container }}"
+        config_file: "{{ lookup('template', '../../templates/vlan_ospfd.conf.j2') }}"
+        hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
+        log_dir_path: "{{ docker_log_dir }}"
+      register: module_out
+
+    - command: "date +%Y%m%d%T"
+      register: end_time
+
+    - name: Fetch the log file
+      slurp:
+        src: "{{ module_out.log_file_path }}"
+      register: logs
+
+    - name: Store the test result in a hash in redis db on server emulator
+      store_result_in_redis:
+        hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
+        start_time: "{{ hostvars['server_emulator']['start_time'] }}"
+        end_time: "{{ end_time.stdout }}"
+        hash_dict: "{{ module_out.hash_dict }}"
+        log_content: "{{ logs['content'] | b64decode }}"
+      delegate_to: 127.0.0.1
+
+
+- hosts: leaf:spine
+  become: true
+  tasks:
+    - include: ../../playbooks/get_goes_version_and_tags.yml
+
+
+- include: quagga_ospf_traffic_vlan_reset.yml
+  when: reset_config
+
+
+- hosts: server_emulator
+  become: true
+  tasks:
+    - name: Get the test result from redis db
+      get_test_result_from_redis:
+        hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
+      register: result
+
+    - name: Print test case result
+      debug:
+        msg: "Test case result: {{ result.result_status }}"
+
+    - name: Print failure summary
+      debug:
+        msg: "Failure summary: {{ result.result_detail }}"
+
+    - lineinfile:
+        path: "{{ regression_summary_report }}"
+        line: "{{ hash_name }}: {{ result.result_status }}"
+
+
+- hosts: leaf:spine
+  become: true
+  tasks:
+    - include: ../../playbooks/get_goes_status.yml

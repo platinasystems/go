@@ -1,5 +1,16 @@
 ---
 
+- hosts: leaf:spine
+  become: true
+  ignore_errors: yes
+  tasks:
+    - shell: dpkg --list | grep kernel
+      register: kernel_version
+
+    - debug:
+        var: kernel_version.stdout_lines
+
+
 - hosts: server_emulator
   become: true
 
@@ -61,10 +72,9 @@
 
     - include: ../../playbooks/get_goes_version_and_tags.yml
 
-    - name: Remove config file
-      file:
-        path: "{{ gobgp_bgp_conf_file }}"
-        state: absent
+
+- include: gobgp_bgp_peering_authentication_reset.yml
+  when: reset_config
 
 
 - hosts: server_emulator
@@ -82,6 +92,10 @@
     - name: Print failure summary
       debug:
         msg: "Failure summary: {{ result.result_detail }}"
+
+    - lineinfile:
+        path: "{{ regression_summary_report }}"
+        line: "{{ hash_name }}: {{ result.result_status }}"
 
 
 - hosts: leaf:spine

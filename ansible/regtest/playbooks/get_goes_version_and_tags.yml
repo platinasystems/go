@@ -1,10 +1,10 @@
 ---
 - name: Get goes version details
-  shell: "goes hget platina package | grep version:"
+  shell: "goes hget {{ platina_redis_channel }} package | grep version:"
   register: version_out
 
 - name: Get goes tag details
-  shell: "goes hget platina package | grep tag:"
+  shell: "goes hget {{ platina_redis_channel }} package | grep tag:"
   register: tag_out
 
 - name: Store goes version and tag details in redis db

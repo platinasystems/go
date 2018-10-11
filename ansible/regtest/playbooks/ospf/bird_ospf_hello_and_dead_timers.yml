@@ -1,5 +1,16 @@
 ---
 
+- hosts: leaf:spine
+  become: true
+  ignore_errors: yes
+  tasks:
+    - shell: dpkg --list | grep kernel
+      register: kernel_version
+
+    - debug:
+        var: kernel_version.stdout_lines
+
+
 - hosts: server_emulator
   become: true
 
@@ -43,6 +54,7 @@
       test_bird_ospf_hello_and_dead_timers:
         switch_name: "{{ inventory_hostname }}"
         config_file: "{{ lookup('file', '../../files/{{inventory_hostname}}/bird_ospf_hello_and_dead_timers.conf') }}"
+        interval_switch: "{{ groups['spine'][0] }}"
         hello_timer: "5"
         dead_timer: "10"
         eth_list: "5,11"
@@ -70,21 +82,9 @@
 
     - include: ../../playbooks/get_goes_version_and_tags.yml
 
-    - name: Restore backup of /etc/bird/bird.conf
-      copy:
-        src: "{{ bird_conf_file_bck }}"
-        dest: "{{ bird_conf_file }}"
-        remote_src: true
 
-    - name: Remove backup file
-      file:
-        path: "{{ bird_conf_file_bck }}"
-        state: absent
-
-    - name: Restart bird
-      service:
-        name: bird
-        state: restarted
+- include: bird_ospf_hello_and_dead_timers_reset.yml
+  when: reset_config
 
 
 - hosts: server_emulator
@@ -102,6 +102,10 @@
     - name: Print failure summary
       debug:
         msg: "Failure summary: {{ result.result_detail }}"
+
+    - lineinfile:
+        path: "{{ regression_summary_report }}"
+        line: "{{ hash_name }}: {{ result.result_status }}"
 
 
 - hosts: leaf:spine

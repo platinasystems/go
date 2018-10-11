@@ -1,5 +1,20 @@
 ---
 
+- include: ../../playbooks/installation/uninstall_packages.yml
+
+- include: ../../playbooks/installation/quagga_install.yml
+
+- hosts: leaf:spine
+  become: true
+  ignore_errors: yes
+  tasks:
+    - shell: dpkg --list | grep kernel
+      register: kernel_version
+
+    - debug:
+        var: kernel_version.stdout_lines
+
+
 - hosts: server_emulator
   become: true
 
@@ -8,66 +23,52 @@
       register: start_time
 
     - set_fact:
-        hash_name: "software_upgrade_05_{{ start_time.stdout }}"
+        hash_name: "regression_software_upgrade_05_{{ start_time.stdout }}"
         start_time: "{{ start_time.stdout }}"
 
 
 - hosts: leaf:spine
   become: true
-
-  vars:
-  - log_dir_path: /var/log/regression/upgrade
-
   tasks:
     - file:
-        path: "{{ log_dir_path }}"
+        path: "{{ upgrade_log_dir }}"
         state: directory
 
     - name: Take backup of /etc/network/interfaces file
       copy:
-        src: /etc/network/interfaces
-        dest: /etc/network/interfaces.bck
+        src: "{{ network_interfaces_file }}"
+        dest: "{{ network_interfaces_file_bck }}"
         remote_src: true
-        owner: root
-        group: root
-        mode: 0644
 
     - name: Take backup of ospfd.conf
       copy:
         src: /etc/quagga/ospfd.conf
         dest: /etc/quagga/ospfd.conf.bck
         remote_src: true
-        owner: root
-        group: root
-        mode: 0644
 
     - name: Add ospf config in ospfd.conf
       blockinfile:
         path: /etc/quagga/ospfd.conf
-        insertafter: "interface vnet"
         marker: ""
-        block: "{{ lookup('file', '../../files/{{inventory_hostname}}/quagga_ospf_traffic.conf') }}"
+        block: "{{ lookup('file', '../../files/{{inventory_hostname}}/ospf_traffic.conf') }}"
 
     - name: Verify quagga ospf traffic
       test_ospf_routes:
         switch_name: "{{ inventory_hostname }}"
-        config_file: "{{ lookup('file', '../../files/{{inventory_hostname}}/quagga_ospf_traffic.conf') }}"
+        config_file: "{{ lookup('file', '../../files/{{inventory_hostname}}/ospf_traffic.conf') }}"
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
-        log_dir_path: "{{ log_dir_path }}"
+        log_dir_path: "{{ upgrade_log_dir }}"
       register: module_out
 
     - name: Restore backup of /etc/network/interfaces
       copy:
-        src: /etc/network/interfaces.bck
-        dest: /etc/network/interfaces
+        src: "{{ network_interfaces_file_bck }}"
+        dest: "{{ network_interfaces_file }}"
         remote_src: true
-        owner: root
-        group: root
-        mode: 0644
 
     - name: Remove backup file
       file:
-        path: /etc/network/interfaces.bck
+        path: "{{ network_interfaces_file_bck }}"
         state: absent
 
     - name: Restore backup of ospfd.conf
@@ -75,9 +76,6 @@
         src: /etc/quagga/ospfd.conf.bck
         dest: /etc/quagga/ospfd.conf
         remote_src: true
-        owner: root
-        group: root
-        mode: 0644
 
     - name: Remove backup file
       file:
@@ -86,6 +84,10 @@
 
     - command: "goes restart"
 
+
+- hosts: spine
+  become: true
+  tasks:
     - name: Download the goes coreboot installer file
       get_url:
         url: "{{ goes_coreboot_installer_url }}"
@@ -99,7 +101,7 @@
         installer_name: "{{ goes_coreboot_installer_name }}"
         coreboot: True
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
-        log_dir_path: "{{ log_dir_path }}"
+        log_dir_path: "{{ upgrade_log_dir }}"
       register: module_out
 
     - name: reboot the switch
@@ -128,19 +130,11 @@
         log_content: "{{ logs['content'] | b64decode }}"
       delegate_to: 127.0.0.1
 
-    - shell: "goes hget platina package | grep version:"
-      register: version_out
 
-    - shell: "goes hget platina package | grep tag:"
-      register: tag_out
-
-    - name: Store GOES version and tag details in redis db
-      store_goes_details:
-        switch_name: "{{ inventory_hostname }}"
-        hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
-        version_details: "{{ version_out.stdout }}"
-        tag_details: "{{ tag_out.stdout }}"
-      delegate_to: 127.0.0.1
+- hosts: leaf:spine
+  become: true
+  tasks:
+    - include: ../../playbooks/get_goes_version_and_tags.yml
 
 
 - hosts: server_emulator
@@ -151,19 +145,16 @@
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
       register: result
 
-    - debug:
+    - name: Print test case result
+      debug:
         msg: "Test case result: {{ result.result_status }}"
 
-    - debug:
-        msg: "Failure summary: {{ result.result_detail }}"
+    - name: Print failure summary
+      debug:
+        msg: "Summary: {{ result.result_detail }}"
 
-    - name: Get playbook run details
-      set_fact:
-        playbook_run: "{{ lookup('file', '{{ ansible_log_file_path }}') }}"
 
-    - name: Store the ansible execution log in redis hash
-      command: "redis-cli -p 9090 hset {{ hostvars['server_emulator']['hash_name'] }} 'result.playbook' '{{ playbook_run }}'"
-
-    - file:
-        path: "{{ ansible_log_file_path }}"
-        state: absent
+- hosts: leaf:spine
+  become: true
+  tasks:
+    - include: ../../playbooks/get_goes_status.yml

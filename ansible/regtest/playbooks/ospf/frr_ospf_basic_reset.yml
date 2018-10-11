@@ -1,0 +1,15 @@
+---
+
+- hosts: leaf:spine
+  become: true
+  tasks:
+    - name: Restore backup of /etc/frr/ospfd.conf
+      copy:
+        src: "{{ frr_ospf_conf_file_bck }}"
+        dest: "{{ frr_ospf_conf_file }}"
+        remote_src: true
+
+    - name: Remove backup file
+      file:
+        path: "{{ frr_ospf_conf_file_bck }}"
+        state: absent

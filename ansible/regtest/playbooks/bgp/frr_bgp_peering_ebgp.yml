@@ -1,5 +1,16 @@
 ---
 
+- hosts: leaf:spine
+  become: true
+  ignore_errors: yes
+  tasks:
+    - shell: dpkg --list | grep kernel
+      register: kernel_version
+
+    - debug:
+        var: kernel_version.stdout_lines
+
+
 - hosts: server_emulator
   become: true
 
@@ -68,21 +79,9 @@
 
     - include: ../../playbooks/get_goes_version_and_tags.yml
 
-    - name: Restore backup of /etc/frr/bgpd.conf
-      copy:
-        src: "{{ frr_bgp_conf_file_bck }}"
-        dest: "{{ frr_bgp_conf_file }}"
-        remote_src: true
 
-    - name: Remove backup file
-      file:
-        path: "{{ frr_bgp_conf_file_bck }}"
-        state: absent
-
-    - name: Restart frr
-      service:
-        name: frr
-        state: restarted
+- include: frr_bgp_peering_ebgp_reset.yml
+  when: reset_config
 
 
 - hosts: server_emulator
@@ -100,6 +99,10 @@
     - name: Print failure summary
       debug:
         msg: "Failure summary: {{ result.result_detail }}"
+
+    - lineinfile:
+        path: "{{ regression_summary_report }}"
+        line: "{{ hash_name }}: {{ result.result_status }}"
 
 
 - hosts: leaf:spine

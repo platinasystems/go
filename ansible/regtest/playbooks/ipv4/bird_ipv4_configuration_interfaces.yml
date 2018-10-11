@@ -1,5 +1,16 @@
 ---
 
+- hosts: leaf:spine
+  become: true
+  ignore_errors: yes
+  tasks:
+    - shell: dpkg --list | grep kernel
+      register: kernel_version
+
+    - debug:
+        var: kernel_version.stdout_lines
+
+
 - hosts: server_emulator
   become: true
 
@@ -57,38 +68,11 @@
         log_content: "{{ logs['content'] | b64decode }}"
       delegate_to: 127.0.0.1
 
-    - name: Get goes version details
-      shell: "goes hget platina package | grep version:"
-      register: version_out
+    - include: ../../playbooks/get_goes_version_and_tags.yml
 
-    - name: Get goes tag details
-      shell: "goes hget platina package | grep tag:"
-      register: tag_out
 
-    - name: Store goes version and tag details in redis db
-      store_goes_details:
-        switch_name: "{{ inventory_hostname }}"
-        hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
-        version_details: "{{ version_out.stdout }}"
-        tag_details: "{{ tag_out.stdout }}"
-      delegate_to: 127.0.0.1
-
-    - name: Restore backup of /etc/network/interfaces
-      copy:
-        src: "{{ network_interfaces_file_bck }}"
-        dest: "{{ network_interfaces_file }}"
-        remote_src: true
-        owner: root
-        group: root
-        mode: 0644
-
-    - name: Remove backup file
-      file:
-        path: "{{ network_interfaces_file_bck }}"
-        state: absent
-
-    - name: Restart goes
-      command: "goes restart"
+- include: bird_ipv4_configuration_interfaces_reset.yml
+  when: reset_config
 
 
 - hosts: server_emulator
@@ -99,9 +83,20 @@
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
       register: result
 
-    - debug:
+    - name: Print test case result
+      debug:
         msg: "Test case result: {{ result.result_status }}"
 
-    - debug:
+    - name: Print failure summary
+      debug:
         msg: "Failure summary: {{ result.result_detail }}"
 
+    - lineinfile:
+        path: "{{ regression_summary_report }}"
+        line: "{{ hash_name }}: {{ result.result_status }}"
+
+
+- hosts: leaf:spine
+  become: true
+  tasks:
+    - include: ../../playbooks/get_goes_status.yml

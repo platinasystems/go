@@ -1,0 +1,96 @@
+---
+
+- hosts: server_emulator
+  become: true
+  ignore_errors: yes
+  tasks:
+    - file:
+        path: "{{ regression_summary_report }}"
+        state: absent
+
+    - file:
+        path: "{{ regression_summary_report }}"
+        state: touch
+
+
+# Uninstall packages stack
+- include: playbooks/installation/uninstall_packages.yml
+
+
+# Reset invaders to default state
+- include: playbooks/master_reset_invaders.yml
+
+
+# Install quagga
+- include: playbooks/installation/quagga_install.yml
+
+
+# Run few quagga bgp test cases
+- include: playbooks/bgp/quagga_bgp_peering_ebgp.yml
+
+- include: playbooks/bgp/quagga_bgp_peering_ibgp_loopback.yml
+
+- include: playbooks/bgp/quagga_bgp_peering_weight.yml
+
+- include: playbooks/bgp/quagga_bgp_peering_if_down.yml
+
+- include: playbooks/bgp/quagga_bgp_peering_route_reflector.yml
+
+- include: playbooks/bgp/quagga_bgp_traffic_test.yml
+
+
+# Run few quagga ospf test cases
+- include: playbooks/ospf/quagga_ospf_basic.yml
+
+- include: playbooks/ospf/quagga_ospf_loopback.yml
+
+- include: playbooks/ospf/quagga_ospf_administrative_distance.yml
+
+
+# Run all quagga isis test cases
+- include: playbooks/isis/quagga_isis_basic.yml
+
+- include: playbooks/isis/quagga_isis_neighbors.yml
+
+
+# Uninstall packages stack
+- include: playbooks/installation/uninstall_packages.yml
+
+
+# Reset the setup
+- include: playbooks/master_reset_invaders.yml
+
+
+# Install bird
+- include: playbooks/installation/bird_install.yml
+
+
+# Run all bird bgp test cases
+- include: playbooks/bgp/bird_bgp_peering_ibgp_route_advertise.yml
+
+- include: playbooks/bgp/bird_bgp_peering_route_reflector.yml
+
+
+# Run all bird ospf test cases
+- include: playbooks/ospf/bird_ospf_with_different_areas.yml
+
+- include: playbooks/ospf/bird_ospf_loadbalancing.yml
+
+- include: playbooks/ospf/bird_ospf_routes.yml
+
+
+- hosts: server_emulator
+  become: true
+  tasks:
+    - name: Get the summary report
+      shell: cat "{{ regression_summary_report }}"
+      register: summary_report
+
+    - name: Print summary report
+      debug:
+        var: summary_report.stdout_lines
+
+    - name: Check summary report for failure
+      fail:
+        msg: "Nightly Regression Failed"
+      when: summary_report.stdout.find('Failed') != -1

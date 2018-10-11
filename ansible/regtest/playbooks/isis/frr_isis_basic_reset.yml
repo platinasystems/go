@@ -1,0 +1,37 @@
+---
+
+- hosts: leaf:spine
+  become: true
+  tasks:
+    - name: Restore backup of /etc/frr/isisd.conf
+      copy:
+        src: "{{ frr_isis_conf_file_bck }}"
+        dest: "{{ frr_isis_conf_file }}"
+        remote_src: true
+
+    - name: Remove backup file
+      file:
+        path: "{{ frr_isis_conf_file_bck }}"
+        state: absent
+
+    - name: Delete dummy interface
+      command: "ip link del dummy0 type dummy"
+
+    - name: Restore backup of /etc/network/interfaces
+      copy:
+        src: "{{ network_interfaces_file_bck }}"
+        dest: "{{ network_interfaces_file }}"
+        remote_src: true
+
+    - name: Remove backup file
+      file:
+        path: "{{ network_interfaces_file_bck }}"
+        state: absent
+
+    - command: "goes restart"
+
+    - name: Restart frr
+      service:
+        name: frr
+        state: restarted
+

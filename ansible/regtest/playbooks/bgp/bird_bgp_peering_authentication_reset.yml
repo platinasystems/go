@@ -1,0 +1,20 @@
+---
+
+- hosts: leaf:spine
+  become: true
+  tasks:
+    - name: Restore backup of /etc/bird/bird.conf
+      copy:
+        src: "{{ bird_conf_file_bck }}"
+        dest: "{{ bird_conf_file }}"
+        remote_src: true
+
+    - name: Remove backup file
+      file:
+        path: "{{ bird_conf_file_bck }}"
+        state: absent
+
+    - name: Restart bird
+      service:
+        name: bird
+        state: restarted

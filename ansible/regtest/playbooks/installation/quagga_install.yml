@@ -1,6 +1,7 @@
 ---
  - hosts: leaf:spine
    become: true
+   ignore_errors: true
    tasks:
     - name: Quagga Installation
       apt: name=quagga
@@ -100,7 +101,3 @@
         - "ip router"
         - "net"
         - "metric-style"
-
-    - file:
-        path: "{{ ansible_log_file_path }}"
-        state: absent

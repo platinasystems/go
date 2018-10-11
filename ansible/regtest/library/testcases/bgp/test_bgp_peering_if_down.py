@@ -124,7 +124,7 @@ def execute_commands(module, cmd):
     """
     global HASH_DICT
 
-    if 'service' in cmd or 'dummy' in cmd or 'restart' in cmd:
+    if 'dummy' in cmd or 'restart' in cmd:
         out = None
     else:
         out = run_cli(module, cmd)
@@ -144,6 +144,7 @@ def check_bgp_neighbors(module):
     :param module: The Ansible module to fetch input parameters.
     """
     global RESULT_STATUS, HASH_DICT
+    neighbor_count = 0
     failure_summary = HASH_DICT.get('result.detail', '')
     switch_name = module.params['switch_name']
     config_file = module.params['config_file'].splitlines()
@@ -156,6 +157,7 @@ def check_bgp_neighbors(module):
         for line in config_file:
             line = line.strip()
             if 'neighbor' in line and 'remote-as' in line:
+                neighbor_count += 1
                 config = line.split()
                 neighbor_ip = config[1]
                 remote_as = config[3]
@@ -166,13 +168,12 @@ def check_bgp_neighbors(module):
                     failure_summary += 'is not present in the output of '
                     failure_summary += 'command {}\n'.format(cmd)
 
-                if 'BGP state = Established' not in bgp_out:
-                    RESULT_STATUS = False
-                    failure_summary += 'On switch {} '.format(switch_name)
-                    failure_summary += 'bgp state of neighbor {} '.format(
-                        neighbor_ip)
-                    failure_summary += 'is not Established in the output of '
-                    failure_summary += 'command {}\n'.format(cmd)
+        if bgp_out.count('BGP state = Established') != neighbor_count:
+            RESULT_STATUS = False
+            failure_summary += 'On switch {} '.format(switch_name)
+            failure_summary += 'bgp state of all/some neighbors '
+            failure_summary += 'are not Established in the output of '
+            failure_summary += 'command {}\n'.format(cmd)
     else:
         RESULT_STATUS = False
         failure_summary += 'On switch {} '.format(switch_name)
@@ -183,31 +184,26 @@ def check_bgp_neighbors(module):
     HASH_DICT['result.detail'] = failure_summary
 
 
-def verify_ping(module):
+def verify_ping(module, self_ip, neighbor_ip):
     """
     Method to verify ping between two switches.
     :param module: The Ansible module to fetch input parameters.
+    :param self_ip: Switch IP from where ping will be initiated.
+    :param neighbor_ip: Destination ip to ping.
     """
     global RESULT_STATUS, HASH_DICT
     failure_summary = HASH_DICT.get('result.detail', '')
     switch_name = module.params['switch_name']
-    leaf_list = module.params['leaf_list']
-    is_leaf = True if switch_name in leaf_list else False
+    packet_count = '3'
 
-    if is_leaf:
-        leaf_list.remove(switch_name)
-        self_ip = '192.168.{}.1'.format(switch_name[-2::])
-        neighbor_ip = '192.168.{}.1'.format(leaf_list[0][-2::])
-        packet_count = '3'
-
-        ping_cmd = 'ping -w 3 -c {} -I {} {}'.format(packet_count,
-                                                     self_ip, neighbor_ip)
-        ping_out = execute_commands(module, ping_cmd)
-        if '{} received'.format(packet_count) not in ping_out:
-            RESULT_STATUS = False
-            failure_summary += 'From switch {} '.format(switch_name)
-            failure_summary += 'neighbor ip {} '.format(neighbor_ip)
-            failure_summary += 'is not getting pinged\n'
+    ping_cmd = 'ping -w 3 -c {} -I {} {}'.format(packet_count,
+                                                 self_ip, neighbor_ip)
+    ping_out = execute_commands(module, ping_cmd)
+    if '{} received'.format(packet_count) not in ping_out:
+        RESULT_STATUS = False
+        failure_summary += 'From switch {} '.format(switch_name)
+        failure_summary += 'neighbor ip {} '.format(neighbor_ip)
+        failure_summary += 'is not getting pinged\n'
 
     HASH_DICT['result.detail'] = failure_summary
 
@@ -224,6 +220,12 @@ def verify_bgp_peering_interface_down(module):
     eth_list = module.params['eth_list'].split(',')
     leaf_list = module.params['leaf_list']
     is_leaf = True if switch_name in leaf_list else False
+
+    if is_leaf:
+        leaf_list.remove(switch_name)
+
+    self_ip = '192.168.{}.1'.format(switch_name[-2::])
+    neighbor_ip = '192.168.{}.1'.format(leaf_list[0][-2::])
 
     # Add dummy0 interface
     execute_commands(module, 'ip link add dummy0 type dummy')
@@ -245,8 +247,11 @@ def verify_bgp_peering_interface_down(module):
     check_bgp_neighbors(module)
 
     # Verify ping
-    if check_ping:
-        verify_ping(module)
+    if check_ping and is_leaf:
+        verify_ping(module, self_ip, neighbor_ip)
+
+    # Wait for 3 seconds
+    time.sleep(3)
 
     # Bring down few eth interfaces on only leaf switches
     if is_leaf:
@@ -262,8 +267,8 @@ def verify_bgp_peering_interface_down(module):
     check_bgp_neighbors(module)
 
     # Verify ping
-    if check_ping:
-        verify_ping(module)
+    if check_ping and is_leaf:
+        verify_ping(module, self_ip, neighbor_ip)
 
     # Bring up eth interfaces which were down
     if is_leaf:
@@ -279,8 +284,8 @@ def verify_bgp_peering_interface_down(module):
     check_bgp_neighbors(module)
 
     # Verify ping
-    if check_ping:
-        verify_ping(module)
+    if check_ping and is_leaf:
+        verify_ping(module, self_ip, neighbor_ip)
 
     # Get the GOES status info
     execute_commands(module, 'goes status')

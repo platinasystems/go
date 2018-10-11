@@ -4,15 +4,15 @@
 - include: playbooks/installation/uninstall_packages.yml
 
 
+# Reset the setup
+- include: playbooks/master_reset_invaders.yml
+
+
 # Install gobgp
 - include: playbooks/installation/gobgp_install.yml
 
 
-# Restart goes
-- include: playbooks/goes_restart.yml
-
-
-# Run all gobgp bgp playbooks
+# Run all gobgp bgp test cases
 - include: playbooks/bgp/gobgp_bgp_peering_ebgp.yml
 
 - include: playbooks/bgp/gobgp_bgp_peering_ebgp_loopback.yml
@@ -35,7 +35,7 @@
 
 - include: playbooks/bgp/gobgp_bgp_peering_route_reflector.yml
 
-- include: playbooks/bgp/gobgp_bgp_peering_redundancy.yml
+#- include: playbooks/bgp/gobgp_bgp_peering_redundancy.yml
 
 - include: playbooks/bgp/gobgp_bgp_peering_consistency.yml
 

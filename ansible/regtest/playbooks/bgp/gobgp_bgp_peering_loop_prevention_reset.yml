@@ -1,0 +1,14 @@
+---
+
+- hosts: leaf:spine
+  become: true
+  tasks:
+    - name: Remove config file
+      file:
+        path: "{{ gobgp_bgp_conf_file }}"
+        state: absent
+
+    - name: Remove advertise route
+      add_remove_route:
+        switch_name: "{{ inventory_hostname }}"
+        remove: True

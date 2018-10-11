@@ -1,0 +1,27 @@
+---
+
+- hosts: leaf:spine
+  become: true
+  tasks:
+    - file:
+        path: "{{ bird_loop_prevention_log_file }}"
+        state: absent
+
+    - name: Restore backup of /etc/bird/bird.conf
+      copy:
+        src: "{{ bird_conf_file_bck }}"
+        dest: "{{ bird_conf_file }}"
+        remote_src: true
+
+    - name: Remove backup file
+      file:
+        path: "{{ bird_conf_file_bck }}"
+        state: absent
+
+    - name: Delete dummy interface
+      command: "ip link del dummy0 type dummy"
+
+    - name: Restart bird
+      service:
+        name: bird
+        state: restarted

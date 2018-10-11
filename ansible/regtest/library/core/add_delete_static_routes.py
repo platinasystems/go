@@ -103,7 +103,7 @@ def main():
 
     for line in config_file:
         if module.params['delete']:
-            line.replace('add', 'del')
+            line = line.replace('add', 'del')
 
         run_cli(module, line)
         msg += "On switch {}, executed '{}'".format(switch_name, line)

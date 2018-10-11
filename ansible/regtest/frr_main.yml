@@ -4,15 +4,15 @@
 - include: playbooks/installation/uninstall_packages.yml
 
 
+# Reset the setup
+- include: playbooks/master_reset_invaders.yml
+
+
 # Install frr
 - include: playbooks/installation/frr_install.yml
 
 
-# Restart goes
-- include: playbooks/goes_restart.yml
-
-
-# Run all frr bgp playbooks
+# Run all frr bgp test cases
 - include: playbooks/bgp/frr_bgp_peering_ebgp.yml
 
 - include: playbooks/bgp/frr_bgp_peering_ebgp_loopback.yml
@@ -39,13 +39,13 @@
 
 - include: playbooks/bgp/frr_bgp_peering_route_reflector.yml
 
-- include: playbooks/bgp/frr_bgp_peering_redundancy.yml
+#- include: playbooks/bgp/frr_bgp_peering_redundancy.yml
 
 - include: playbooks/bgp/frr_bgp_peering_consistency.yml
 
 - include: playbooks/bgp/frr_bgp_peering_if_down.yml
 
-- include: playbooks/bgp/frr_bgp_peering_loop_prevention.yml
+#- include: playbooks/bgp/frr_bgp_peering_loop_prevention.yml
 
 - include: playbooks/bgp/frr_bgp_state_propagation.yml
 
@@ -54,7 +54,7 @@
 - include: playbooks/bgp/frr_bgp_traffic_test.yml
 
 
-# Run all frr ospf playbooks
+# Run all frr ospf test cases
 - include: playbooks/ospf/frr_ospf_basic.yml
 
 - include: playbooks/ospf/frr_ospf_loopback.yml
@@ -65,14 +65,20 @@
 
 - include: playbooks/ospf/frr_ospf_loadbalancing.yml
 
-- include: playbooks/ospf/frr_ospf_hello_and_dead_timers.yml
+#- include: playbooks/ospf/frr_ospf_hello_and_dead_timers.yml
 
 - include: playbooks/ospf/frr_ospf_routes.yml
 
 - include: playbooks/ospf/frr_ospf_traffic.yml
 
 
-# Run all frr isis playbooks
+# Run all frr isis test cases
 - include: playbooks/isis/frr_isis_basic.yml
 
 - include: playbooks/isis/frr_isis_neighbors.yml
+
+
+# Run all frr ipv4 test cases
+#- include: playbooks/ipv4/frr_ipv4_configuration_interfaces.yml
+
+#- include: playbooks/ipv4/frr_ipv4_route_scale.yml

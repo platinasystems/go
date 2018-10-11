@@ -1,5 +1,19 @@
 ---
 
+- hosts: leaf:spine
+  become: true
+  ignore_errors: yes
+  gather_facts: no
+  tasks:
+    - shell: dpkg --list | grep kernel
+      register: kernel_version
+      when: not dry_run
+
+    - debug:
+        var: kernel_version.stdout_lines
+      when: not dry_run
+
+
 - hosts: server_emulator
   become: true
 
@@ -14,31 +28,37 @@
 
 - hosts: leaf:spine
   become: true
+  gather_facts: no
   tasks:
     - name: Take backup of /etc/quagga/bgpd.conf
       copy:
         src: "{{ quagga_bgp_conf_file }}"
         dest: "{{ quagga_bgp_conf_file_bck }}"
         remote_src: true
+      when: not dry_run
 
     - name: Add bgp config in /etc/quagga/bgpd.conf
       blockinfile:
         path: "{{ quagga_bgp_conf_file }}"
         marker: ""
         block: "{{ lookup('file', '../../files/{{inventory_hostname}}/bgp_peering_ebgp.conf') }}"
+      when: not dry_run
 
     - name: Restart quagga
       service:
         name: quagga
         state: restarted
+      when: not dry_run
 
     - name: Wait for few seconds for bgp to establish connection
       pause:
         seconds: 35
+      when: not dry_run
 
     - file:
         path: "{{ bgp_log_dir }}"
         state: directory
+      when: not dry_run
 
     - name: Verify quagga bgp peering ebgp
       test_bgp_authentication:
@@ -47,15 +67,31 @@
         package_name: "quagga"
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
         log_dir_path: "{{ bgp_log_dir }}"
+        dry_run_mode: "{{ dry_run }}"
       register: module_out
+      when: not dry_run
+
+    - name: Verify quagga bgp peering ebgp
+      test_bgp_authentication:
+        switch_name: "{{ inventory_hostname }}"
+        config_file: "{{ lookup('file', '../../files/{{inventory_hostname}}/bgp_peering_ebgp.conf') }}"
+        package_name: "quagga"
+        hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
+        log_dir_path: "{{ bgp_log_dir }}"
+        dry_run_mode: "{{ dry_run }}"
+      register: module_out
+      delegate_to: 127.0.0.1
+      when: dry_run
 
     - command: "date +%Y%m%d%T"
       register: end_time
+      when: not dry_run
 
     - name: Fetch the log file
       slurp:
         src: "{{ module_out.log_file_path }}"
       register: logs
+      when: not dry_run
 
     - name: Store the test result in a hash in redis db on server emulator
       store_result_in_redis:
@@ -65,24 +101,14 @@
         hash_dict: "{{ module_out.hash_dict }}"
         log_content: "{{ logs['content'] | b64decode }}"
       delegate_to: 127.0.0.1
+      when: not dry_run
 
     - include: ../../playbooks/get_goes_version_and_tags.yml
+      when: not dry_run
 
-    - name: Restore backup of /etc/quagga/bgpd.conf
-      copy:
-        src: "{{ quagga_bgp_conf_file_bck }}"
-        dest: "{{ quagga_bgp_conf_file }}"
-        remote_src: true
 
-    - name: Remove backup file
-      file:
-        path: "{{ quagga_bgp_conf_file_bck }}"
-        state: absent
-
-    - name: Restart quagga
-      service:
-        name: quagga
-        state: restarted
+- include: quagga_bgp_peering_ebgp_reset.yml
+  when: reset_config and not dry_run
 
 
 - hosts: server_emulator
@@ -92,17 +118,42 @@
       get_test_result_from_redis:
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
       register: result
+      when: not dry_run
 
     - name: Print test case result
       debug:
         msg: "Test case result: {{ result.result_status }}"
+      when: not dry_run
 
     - name: Print failure summary
       debug:
         msg: "Failure summary: {{ result.result_detail }}"
+      when: not dry_run
+
+    - lineinfile:
+        path: "{{ regression_summary_report }}"
+        line: "{{ hash_name }}: {{ result.result_status }}"
+      when: not dry_run
 
 
 - hosts: leaf:spine
   become: true
+  gather_facts: no
+  vars:
+    config_file: "{{ lookup('file', '../../files/{{inventory_hostname}}/bgp_peering_ebgp.conf') }}"
+ 
   tasks:
     - include: ../../playbooks/get_goes_status.yml
+      when: not dry_run
+    
+    - name: Print bgp config
+      debug:
+        var: config_file
+      when: dry_run
+      delegate_to: 127.0.0.1
+
+    - name: Print dry run output
+      debug:
+        var: module_out.cmds
+      when: dry_run
+      delegate_to: 127.0.0.1

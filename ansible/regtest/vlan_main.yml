@@ -1,0 +1,22 @@
+---
+
+# Uninstall packages stack
+- include: playbooks/installation/uninstall_packages.yml
+
+
+# Reset invaders
+- include: playbooks/master_reset_invaders.yml
+
+
+# Run all vlan test cases
+- include: playbooks/vlan/vlan_configuration_single_vlan.yml
+
+#- include: playbooks/vlan/vlan_configuration_multiple_vlans.yml
+
+- include: playbooks/vlan/vlan_configuration_arping_vlan_interfaces_and_physical_interfaces.yml
+
+- include: playbooks/vlan/vlan_configuration_on_transit_vlan_interfaces.yml
+
+#- include: playbooks/vlan/vlan_configuration_dhcp_vlan_interfaces_and_physical_interfaces.yml
+
+- include: playbooks/vlan/vlan_configuration_lldp_vlan_interfaces_and_physical_interfaces.yml

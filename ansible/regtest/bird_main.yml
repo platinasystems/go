@@ -4,15 +4,15 @@
 - include: playbooks/installation/uninstall_packages.yml
 
 
+# Reset the setup
+- include: playbooks/master_reset_invaders.yml
+
+
 # Install bird
 - include: playbooks/installation/bird_install.yml
 
 
-# Restart goes
-- include: playbooks/goes_restart.yml
-
-
-# Run all bird bgp playbooks
+# Run all bird bgp test cases
 - include: playbooks/bgp/bird_bgp_peering_ebgp.yml
 
 - include: playbooks/bgp/bird_bgp_peering_ebgp_loopback.yml
@@ -35,7 +35,7 @@
 
 - include: playbooks/bgp/bird_bgp_peering_route_reflector.yml
 
-- include: playbooks/bgp/bird_bgp_peering_redundancy.yml
+#- include: playbooks/bgp/bird_bgp_peering_redundancy.yml
 
 - include: playbooks/bgp/bird_bgp_peering_consistency.yml
 
@@ -48,7 +48,7 @@
 - include: playbooks/bgp/bird_bgp_peering_convergence.yml
 
 
-# Run all bird ospf playbooks
+# Run all bird ospf test cases
 - include: playbooks/ospf/bird_ospf_basic.yml
 
 - include: playbooks/ospf/bird_ospf_loopback.yml
@@ -57,7 +57,7 @@
 
 - include: playbooks/ospf/bird_ospf_loadbalancing.yml
 
-- include: playbooks/ospf/bird_ospf_hello_and_dead_timers.yml
+#- include: playbooks/ospf/bird_ospf_hello_and_dead_timers.yml
 
 - include: playbooks/ospf/bird_ospf_routes.yml
 

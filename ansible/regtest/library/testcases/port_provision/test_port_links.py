@@ -80,6 +80,11 @@ options:
         - Path to log directory where logs will be stored.
       required: False
       type: str
+    platina_redis_channel:
+      description:
+        - Name of the platina redis channel.
+      required: False
+      type: str
 """
 
 EXAMPLES = """
@@ -89,6 +94,7 @@ EXAMPLES = """
     eth_list: "2,4,6,8,10,12,14,16"
     speed: "100g"
     media: "copper"
+    platina_redis_channel: "platina-mk1"
     hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
     log_dir_path: "{{ port_provision_log_dir }}"
 """
@@ -156,6 +162,7 @@ def verify_port_links(module):
     fec = module.params['fec']
     two_lanes = module.params['two_lanes']
     leaf_server = module.params['leaf_server']
+    platina_redis_channel = module.params['platina_redis_channel']
     eth_list = module.params['eth_list'].split(',')
     third_octet = 0
 
@@ -170,8 +177,9 @@ def verify_port_links(module):
         for eth in eth_list:
             for port in subports:
                 # Verify interface media is set to correct value
-                cmd = 'goes hget platina vnet.eth-{}-{}.media'.format(
-                    eth, port)
+                cmd = 'goes hget {} vnet.eth-{}-{}.media'.format(
+                    platina_redis_channel, eth, port
+                )
                 out = execute_commands(module, cmd)
                 if media not in out:
                     RESULT_STATUS = False
@@ -181,20 +189,24 @@ def verify_port_links(module):
                         eth, port)
 
                 # Verify speed of interfaces are set to correct value
-                cmd = 'goes hget platina vnet.eth-{}-{}.speed'.format(
-                    eth, port)
+                cmd = 'goes hget {} vnet.eth-{}-{}.speed'.format(
+                    platina_redis_channel, eth, port
+                )
                 out = execute_commands(module, cmd)
-                if speed not in out:
+                check_speed = 'autoneg' if speed == 'auto' else speed
+                if out not in check_speed:
                     RESULT_STATUS = False
                     failure_summary += 'On switch {} '.format(switch_name)
                     failure_summary += 'speed of the interface '
-                    failure_summary += 'is not set to {} for '.format(speed)
+                    failure_summary += 'is not set to {} for '.format(
+                        check_speed)
                     failure_summary += 'the interface eth-{}-{}\n'.format(
                         eth, port)
 
                 # Verify fec of interfaces are set to correct value
-                cmd = 'goes hget platina vnet.eth-{}-{}.fec'.format(
-                    eth, port)
+                cmd = 'goes hget {} vnet.eth-{}-{}.fec'.format(
+                    platina_redis_channel, eth, port
+                )
                 out = execute_commands(module, cmd)
                 if fec not in out:
                     RESULT_STATUS = False
@@ -219,10 +231,13 @@ def verify_port_links(module):
                 cmd = 'ifconfig eth-{}-{} up'.format(eth, port)
                 execute_commands(module, cmd)
 
+        time.sleep(20)
         for eth in eth_list:
             for port in subports:
                 # Verify if port links are up for eth
-                cmd = 'goes hget platina vnet.eth-{}-{}.link'.format(eth, port)
+                cmd = 'goes hget {} vnet.eth-{}-{}.link'.format(
+                    platina_redis_channel, eth, port
+                )
                 out = execute_commands(module, cmd)
                 if 'true' not in out:
                     RESULT_STATUS = False
@@ -235,8 +250,9 @@ def verify_port_links(module):
         for eth in eth_list:
             for subport in range(1, 5):
                 # Verify interface media is set to correct value
-                cmd = 'goes hget platina vnet.eth-{}-{}.media'.format(
-                    eth, subport)
+                cmd = 'goes hget {} vnet.eth-{}-{}.media'.format(
+                    platina_redis_channel, eth, subport
+                )
                 out = execute_commands(module, cmd)
                 if media not in out:
                     RESULT_STATUS = False
@@ -246,20 +262,24 @@ def verify_port_links(module):
                         eth, subport)
 
                 # Verify speed of interfaces are set to correct value
-                cmd = 'goes hget platina vnet.eth-{}-{}.speed'.format(
-                    eth, subport)
+                cmd = 'goes hget {} vnet.eth-{}-{}.speed'.format(
+                    platina_redis_channel, eth, subport
+                )
                 out = execute_commands(module, cmd)
-                if out not in speed:
+                check_speed = 'autoneg' if speed == 'auto10g' else speed
+                if out not in check_speed:
                     RESULT_STATUS = False
                     failure_summary += 'On switch {} '.format(switch_name)
                     failure_summary += 'speed of the interface '
-                    failure_summary += 'is not set to {} for '.format(speed)
+                    failure_summary += 'is not set to {} for '.format(
+                        check_speed)
                     failure_summary += 'the interface eth-{}-{}\n'.format(
                         eth, subport)
 
                 # Verify fec of interfaces are set to correct value
-                cmd = 'goes hget platina vnet.eth-{}-{}.fec'.format(
-                    eth, subport)
+                cmd = 'goes hget {} vnet.eth-{}-{}.fec'.format(
+                    platina_redis_channel, eth, subport
+                )
                 out = execute_commands(module, cmd)
                 if fec not in out:
                     RESULT_STATUS = False
@@ -287,8 +307,9 @@ def verify_port_links(module):
         for eth in eth_list:
             for subport in range(1, 5):
                 # Verify if port links are up
-                cmd = 'goes hget platina vnet.eth-{}-{}.link'.format(
-                    eth, subport)
+                cmd = 'goes hget {} vnet.eth-{}-{}.link'.format(
+                    platina_redis_channel, eth, subport
+                )
                 out = execute_commands(module, cmd)
                 if 'true' not in out:
                     RESULT_STATUS = False
@@ -312,7 +333,8 @@ def main():
             speed=dict(required=False, type='str'),
             media=dict(required=False, type='str'),
             fec=dict(required=False, type='str', default=''),
-            leaf_server=dict(required=False, type='str'),
+            platina_redis_channel=dict(required=False, type='str'),
+            leaf_server=dict(required=False, type='str', default=''),
             two_lanes=dict(required=False, type='bool', default=False),
             hash_name=dict(required=False, type='str'),
             log_dir_path=dict(required=False, type='str'),

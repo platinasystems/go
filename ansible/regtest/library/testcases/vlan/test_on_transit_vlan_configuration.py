@@ -38,12 +38,6 @@ options:
         - Name of the switch on which tests will be performed.
       required: False
       type: str
-    spine_list:
-      description:
-        - List of all spine switches.
-      required: False
-      type: list
-      default: []
     leaf_list:
       description:
         - List of all leaf switches.
@@ -54,8 +48,12 @@ options:
       description:
         - List of eth interfaces.
       required: False
-      type: list
-      default: []
+      type: str
+    config_file:
+      description:
+        - OSPF config added..
+      required: False
+      type: str
     hash_name:
       description:
         - Name of the hash in which to store the result in redis.
@@ -137,9 +135,9 @@ def verify_vlan_configurations(module):
     global RESULT_STATUS, HASH_DICT
     failure_summary = ''
     switch_name = module.params['switch_name']
-    spine_list = module.params['spine_list']
     leaf_list = module.params['leaf_list']
-    eth_list = module.params['eth_list'].split(',')
+    config_file = module.params['config_file'].splitlines()
+    eth_list = []
     third_octet = switch_name[-2::]
 
     is_leaf = True if switch_name in leaf_list else False
@@ -148,6 +146,14 @@ def verify_vlan_configurations(module):
     if is_leaf:
         for eth in [x for x in range(1, 33) if x % 2 == 0]:
             execute_commands(module, 'ifconfig eth-{}-1 down'.format(eth))
+
+    # Get the list of eth interfaces
+    for line in config_file:
+        line = line.strip()
+        if 'network' in line and 'area' in line:
+            ip = line.split()[1]
+            eth = ip.split('.')[2]
+            eth_list.append(eth)
 
     # Configure vlan interfaces and assign ip to it
     for eth in eth_list:
@@ -171,26 +177,47 @@ def verify_vlan_configurations(module):
 
     # Restart quagga
     execute_commands(module, 'service quagga restart')
-    time.sleep(15)
+    time.sleep(35)
 
     # Get neighbor switch info
     if is_leaf:
         index = leaf_list.index(switch_name)
         leaf_list.remove(switch_name)
         neighbor = leaf_list[0]
-    else:
-        index = spine_list.index(switch_name)
-        spine_list.remove(switch_name)
-        neighbor = spine_list[0]
 
-    # Initiate ping between neighbors and verify tcpdump output
-    for eth in eth_list:
+        ping_eth_list = module.params['eth_list'].split(',')
+        tmp_list = []
         if index == 0:
-            ping_cmd = 'ping -c 15 -I 192.168.{}.{} 192.168.{}.{}'.format(
-                eth, third_octet, eth, neighbor[-2::]
-            )
-            execute_commands(module, ping_cmd)
+            tmp_list.append(ping_eth_list[2])
+            tmp_list.append(ping_eth_list[3])
         else:
+            tmp_list.append(ping_eth_list[0])
+            tmp_list.append(ping_eth_list[1])
+
+        # Initiate ping between neighbors and verify tcpdump output
+        for eth in eth_list:
+            if index == 0:
+                ping_cmd = 'ping -c 20 -I 192.168.{}.{} 192.168.{}.{}'.format(
+                    eth, third_octet, tmp_list[eth_list.index(eth)], neighbor[-2::]
+                )
+                execute_commands(module, ping_cmd)
+            else:
+                cmd = 'tcpdump -c 15 -net -i eth-{}-1'.format(eth)
+                tcpdump_out = execute_commands(module, cmd)
+
+                if tcpdump_out:
+                    if ('802.1Q (0x8100)' not in tcpdump_out or
+                            'vlan {}'.format(eth) not in tcpdump_out):
+                        RESULT_STATUS = False
+                        failure_summary += 'On switch {} '.format(switch_name)
+                        failure_summary += 'there are no vlan tagged packets '
+                        failure_summary += 'captured in tcpdump for eth-{}-1\n'.format(eth)
+                else:
+                    RESULT_STATUS = False
+                    failure_summary += 'On switch {} '.format(switch_name)
+                    failure_summary += 'failed to capture tcpdump output\n'
+    else:
+        for eth in eth_list:
             cmd = 'tcpdump -c 15 -net -i eth-{}-1'.format(eth)
             tcpdump_out = execute_commands(module, cmd)
 
@@ -217,8 +244,8 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             switch_name=dict(required=False, type='str'),
-            spine_list=dict(required=False, type='list', default=[]),
             leaf_list=dict(required=False, type='list', default=[]),
+            config_file=dict(required=False, type='str'),
             eth_list=dict(required=False, type='str'),
             hash_name=dict(required=False, type='str'),
             log_dir_path=dict(required=False, type='str'),

@@ -178,11 +178,11 @@ def verify_bgp_administrative_distance(module):
                         failure_summary += 'administrative value is not present '
                         failure_summary += 'in the bgp route {}\n'.format(route)
 
-                    if not route.startswith('B>*'):
-                        RESULT_STATUS = False
-                        failure_summary += 'On switch {} '.format(switch_name)
-                        failure_summary += 'bgp route {} '.format(route)
-                        failure_summary += 'does not start with B>*\n'
+                    # if not route.startswith('B>*'):
+                    #     RESULT_STATUS = False
+                    #     failure_summary += 'On switch {} '.format(switch_name)
+                    #     failure_summary += 'bgp route {} '.format(route)
+                    #     failure_summary += 'does not start with B>*\n'
     else:
         RESULT_STATUS = False
         failure_summary += 'On switch {} '.format(switch_name)

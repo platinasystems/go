@@ -1,0 +1,34 @@
+---
+
+- hosts: leaf:spine
+  become: true
+  tasks:
+    - name: Restore backup of /etc/quagga/bgpd.conf
+      copy:
+        src: "{{ quagga_bgp_conf_file_bck }}"
+        dest: "{{ quagga_bgp_conf_file }}"
+        remote_src: true
+
+    - name: Remove backup file
+      file:
+        path: "{{ quagga_bgp_conf_file_bck }}"
+        state: absent
+
+    - name: Restore backup of /etc/quagga/zebra.conf
+      copy:
+        src: "{{ quagga_zebra_conf_file_bck }}"
+        dest: "{{ quagga_zebra_conf_file }}"
+        remote_src: true
+
+    - name: Remove backup file
+      file:
+        path: "{{ quagga_zebra_conf_file_bck }}"
+        state: absent
+
+    - name: Delete dummy interface
+      command: "ip link del dummy0 type dummy"
+
+    - name: Restart quagga
+      service:
+        name: quagga
+        state: restarted

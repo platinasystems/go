@@ -1,5 +1,16 @@
 ---
 
+- hosts: leaf:spine
+  become: true
+  ignore_errors: yes
+  tasks:
+    - shell: dpkg --list | grep kernel
+      register: kernel_version
+
+    - debug:
+        var: kernel_version.stdout_lines
+
+
 - hosts: server_emulator
   become: true
 
@@ -23,6 +34,7 @@
       test_bmc_redis:
         switch_name: "{{ inventory_hostname }}"
         bmc_redis_ip: "{{ bmc_redis_ip }}"
+        platina_redis_channel: "{{ platina_redis_channel }}"
         hash_name: "{{ hostvars['server_emulator']['hash_name'] }}"
         log_dir_path: "{{ redis_log_dir }}"
       register: module_out
@@ -62,6 +74,10 @@
     - name: Print failure summary
       debug:
         msg: "Failure summary: {{ result.result_detail }}"
+
+    - lineinfile:
+        path: "{{ regression_summary_report }}"
+        line: "{{ hash_name }}: {{ result.result_status }}"
 
 
 - hosts: leaf:spine

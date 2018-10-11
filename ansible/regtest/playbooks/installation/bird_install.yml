@@ -1,7 +1,7 @@
 ---
  - hosts: leaf:spine
    become: true
-
+   ignore_errors: yes
    tasks:
      - name: Add Bird package in repository config file
        lineinfile:
@@ -12,4 +12,4 @@
      - name: Install Bird
        apt:
          name: bird
-         update_cache: yes
+         allow_unauthenticated: yes

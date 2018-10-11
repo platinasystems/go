@@ -124,7 +124,7 @@ def get_cli(module):
     :param module: The Ansible module to fetch input parameters.
     :return: Initial cli/cmd string.
     """
-    return "docker exec -it {} ".format(module.params['container'])
+    return "docker exec -i {} ".format(module.params['container'])
 
 
 def verify_ospf_neighbors(module):
@@ -145,15 +145,21 @@ def verify_ospf_neighbors(module):
     cmd = get_cli(module) + "vtysh -c 'show ip route ospf'"
     ospf_routes = execute_commands(module, cmd)
 
-    for line in config_file:
-        line = line.strip()
-        if 'network' in line and 'area' in line:
-            route = line.split()[1]
-            if route not in ospf_routes:
-                RESULT_STATUS = False
-                failure_summary += 'On switch {} '.format(switch_name)
-                failure_summary += 'ospf route {} is not showing up '.format(route)
-                failure_summary += 'in the output of command {} '.format(cmd)
+    if ospf_routes:
+        for line in config_file:
+            line = line.strip()
+            if 'network' in line and 'area' in line:
+                route = line.split()[1]
+                if route not in ospf_routes:
+                    RESULT_STATUS = False
+                    failure_summary += 'On switch {} '.format(switch_name)
+                    failure_summary += 'ospf route {} is not showing up '.format(route)
+                    failure_summary += 'in the output of command {} '.format(cmd)
+    else:
+        RESULT_STATUS = False
+        failure_summary += 'On switch {} '.format(switch_name)
+        failure_summary += 'ospf routes cannot be verified since '
+        failure_summary += 'output of command {} is None'.format(cmd)
 
     # Get ospf neighbors relationships
     cmd = get_cli(module) + "vtysh -c 'show ip ospf neighbor'"
@@ -163,7 +169,8 @@ def verify_ospf_neighbors(module):
     if out is None or 'error' in out:
         RESULT_STATUS = False
         failure_summary += 'On Switch {} '.format(switch_name)
-        failure_summary += 'output of command {} is None\n'.format(cmd)
+        failure_summary += 'ospf neighbors cannot be verified since '
+        failure_summary += 'output of command {} is None'.format(cmd)
 
     HASH_DICT['result.detail'] = failure_summary
 

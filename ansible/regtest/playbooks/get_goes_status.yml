@@ -2,7 +2,9 @@
 - name: Get goes status
   command: goes status
   register: goes
+  ignore_errors: yes
 
 - name: Print goes status
   debug:
     var: goes.stdout
+  ignore_errors: yes
