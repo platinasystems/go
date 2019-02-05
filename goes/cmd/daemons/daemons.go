@@ -18,6 +18,7 @@ import (
 	"github.com/platinasystems/go/goes"
 	"github.com/platinasystems/go/internal/prog"
 	"github.com/platinasystems/log"
+	"github.com/platinasystems/redis"
 )
 
 const sockname = "goes-daemons"
@@ -85,6 +86,9 @@ func (d *Daemons) start(args ...string) {
 		if d.cmd(p.Process.Pid) != nil {
 			fmt.Fprintln(werr, "restart")
 			d.del(p.Process.Pid)
+			if args[0]=="redisd"{
+				defer setpub()
+			}
 			defer d.start(args...)
 		}
 		wout.Sync()
@@ -92,6 +96,19 @@ func (d *Daemons) start(args ...string) {
 		wout.Close()
 		werr.Close()
 	}(p, wout, werr, args...)
+}
+
+func setpub(){
+	if err := redis.IsReady(); err == nil {
+		sock, err := atsock.NewRpcClient("vnetd")
+		if err == nil {
+			err = sock.Call("Mk1.Createpub","pub", &struct{}{})
+			if err != nil {
+				fmt.Errorf("rpc",err)
+			}
+			defer sock.Close()
+		}
+	}
 }
 
 func (d *Daemons) List(args struct{}, reply *string) error {
